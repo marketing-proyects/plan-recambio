@@ -34,12 +34,18 @@ fondo_path = get_random_bg()
 logo_base64 = get_base64("logo_wurth.jpg")
 f_bold = get_base64("WuerthBold.ttf")
 
-# --- CSS PARA LIMPIEZA VISUAL Y TRANSPARENCIAS ---
+# --- CSS PERSONALIZADO ---
 st.markdown(f"""
     <style>
     @font-face {{ font-family: 'WuerthBold'; src: url('data:font/ttf;base64,{f_bold}'); }}
     
     header {{ visibility: hidden; }}
+    
+    /* ELIMINAR LOS ICONOS DE ENLACE (CLIP) EN LOS TÍTULOS */
+    .stMarkdown a {{
+        display: none !important;
+    }}
+    
     .main .block-container {{
         padding-top: 0 !important;
         padding-bottom: 0 !important;
@@ -54,7 +60,7 @@ st.markdown(f"""
         background-size: cover; background-position: center; opacity: 0.12;
     }}
 
-    /* ELIMINACIÓN DE BLOQUES BLANCOS EN INPUTS (TEXTO Y NÚMEROS) */
+    /* TRANSPARENCIA EN INPUTS Y LÍNEA ROJA */
     div[data-testid="stTextInput"], div[data-testid="stNumberInput"], 
     div[data-baseweb="input"], div[data-baseweb="base-input"] {{
         background-color: transparent !important;
@@ -65,7 +71,7 @@ st.markdown(f"""
     div[data-testid="stTextInput"] input, div[data-testid="stNumberInput"] input {{
         background-color: transparent !important;
         border: none !important;
-        border-bottom: 2px solid #CC0000 !important; /* Línea roja fina */
+        border-bottom: 2px solid #CC0000 !important;
         border-radius: 0px !important;
         padding: 5px 0px !important;
         font-family: 'WuerthBold' !important;
@@ -78,12 +84,6 @@ st.markdown(f"""
         color: #CC0000 !important;
         font-size: 14px !important;
     }}
-
-    /* ELIMINAR BLOQUES RESIDUALES Y MARGENES EXTRA */
-    [data-testid="stVerticalBlock"] > div:empty {{ display: none !important; }}
-    .st-emotion-cache-1kyx60e {{ display: none !important; }} 
-
-    .main-body {{ background-color: transparent; padding-bottom: 40px; }}
 
     /* CABECERA */
     .header-container {{
@@ -101,7 +101,7 @@ st.markdown(f"""
         text-align: center; line-height: 1.1;
     }}
 
-    /* MENÚ PESTAÑAS */
+    /* TABS Y TARJETAS */
     .stTabs [data-baseweb="tab-list"] {{ gap: 10px; padding: 10px 20px; background-color: transparent !important; }}
     .stTabs [data-baseweb="tab"] {{
         font-family: 'WuerthBold' !important; font-size: 20px !important; 
@@ -110,7 +110,6 @@ st.markdown(f"""
     }}
     .stTabs [aria-selected="true"] {{ color: #CC0000 !important; background-color: #f5f5f5 !important; }}
 
-    /* TARJETAS */
     .card {{ 
         background-color: white; padding: 30px; border-radius: 15px; 
         margin: 10px 20px 20px 20px; border: 1px solid #ddd;
@@ -126,7 +125,7 @@ st.markdown(f"""
     <div class="bg-layer"></div>
     """, unsafe_allow_html=True)
 
-# --- CABECERA ---
+# --- CUERPO DE LA APP ---
 st.markdown(f"""
     <div class="header-container">
         <div class="header-logo"><img src="data:image/jpeg;base64,{logo_base64}" width="130"></div>
@@ -136,7 +135,6 @@ st.markdown(f"""
 
 st.markdown('<div class="main-body">', unsafe_allow_html=True)
 
-# --- FICHA DE CLIENTE ---
 c_nom, c_num = st.columns([1.5, 1])
 with c_nom:
     st.session_state.nombre_cliente = st.text_input("NOMBRE DEL CLIENTE", value=st.session_state.nombre_cliente, key="in_nom")
@@ -161,7 +159,7 @@ with t1:
         st.markdown(f'<div class="big-num">{val}%</div>', unsafe_allow_html=True)
         if st.button("SUMATORIA DE DESCUENTOS", use_container_width=True):
             st.session_state.bolsa_puntos = val
-            st.success(f"Bolsa actualizada: {val}%")
+            st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
 with t2:
@@ -184,14 +182,10 @@ with t2:
                 st.write(f"**Puntos disponibles:** {disp}%")
                 dto = st.slider("Asignar descuento (%)", 0, 30, value=min(disp, 30))
                 if st.button("AÑADIR AL PEDIDO", use_container_width=True):
-                    if disp >= dto and dto > 0:
+                    if disp >= dto:
                         st.session_state.carrito.append({"prod": sel, "dto": dto})
                         st.session_state.bolsa_puntos -= dto
                         st.rerun()
-                    elif dto == 0:
-                        st.error("El descuento debe ser mayor a 0%")
-                    else:
-                        st.error("Puntos insuficientes en la bolsa.")
     st.markdown('</div>', unsafe_allow_html=True)
 
 with t3:
@@ -202,19 +196,12 @@ with t3:
             ca, cb, cc = st.columns([3, 1, 1])
             ca.write(f"**{i+1}.** {item['prod']}")
             cb.write(f"**-{item['dto']}%**")
-            # CORRECCIÓN DE ELIMINACIÓN DE ITEM
             if cc.button("Quitar", key=f"del_{i}"):
                 st.session_state.bolsa_puntos += item['dto']
                 st.session_state.carrito.pop(i)
                 st.rerun()
-        
-        st.divider()
-        st.write(f"**Bolsa restante:** {st.session_state.bolsa_puntos}%")
-        if st.button("FINALIZAR RECAMBIO", use_container_width=True):
-            st.balloons()
-            st.success("Pedido registrado correctamente.")
     else:
-        st.info("El carrito está vacío.")
+        st.write("El pedido está vacío.")
     st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown('</div>', unsafe_allow_html=True)
