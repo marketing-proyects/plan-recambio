@@ -63,7 +63,7 @@ st.markdown(f"""
     /* Tarjeta Unificada */
     .card {{ 
         background-color: white; 
-        padding: 40px 30px; /* Aumento de padding superior e inferior */
+        padding: 30px 20px; /* Aumento de padding superior e inferior */
         border-radius: 15px; 
         border: 1px solid #ddd; 
         box-shadow: 0px 10px 30px rgba(0,0,0,0.1);
