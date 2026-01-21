@@ -31,7 +31,7 @@ logo_base64 = get_base64("logo_wurth.jpg")
 red_stripe_base64 = get_base64("logo_red_stripe.png")
 f_bold = get_base64("WuerthBold.ttf")
 
-# --- CSS DEFINITIVO (MENÚ EN GRIS CLARO AL SELECCIONAR) ---
+# --- CSS RESTAURADO Y AJUSTADO (SIN LÍNEA ROJA) ---
 st.markdown(f"""
     <style>
     @font-face {{ font-family: 'WuerthBold'; src: url('data:font/ttf;base64,{f_bold}'); }}
@@ -51,7 +51,7 @@ st.markdown(f"""
         background-size: cover; background-position: center; opacity: 0.12;
     }}
 
-    /* Eliminar bloques fantasma */
+    /* Eliminar bloques fantasma de Streamlit */
     [data-testid="stVerticalBlock"] > div:empty {{ display: none !important; }}
 
     .main-body {{
@@ -75,7 +75,7 @@ st.markdown(f"""
         text-align: center; line-height: 1.1;
     }}
 
-    /* MENÚ INSTITUCIONAL CON FONDO GRIS AL SELECCIONAR */
+    /* MENÚ: Sin línea roja, solo cambio de fondo */
     .stTabs {{ background: transparent !important; border: none !important; }}
     .stTabs [data-baseweb="tab-list"] {{ 
         gap: 10px; padding: 10px 20px; 
@@ -84,18 +84,20 @@ st.markdown(f"""
     .stTabs [data-baseweb="tab"] {{
         font-family: 'WuerthBold' !important; font-size: 20px !important; 
         height: 60px; color: #666; flex: 1; text-align: center;
-        background-color: #e8e8e8; /* Color base apagado */
+        background-color: #e8e8e8;
         border-radius: 12px 12px 0 0 !important; 
         border: none !important;
-        transition: background-color 0.3s ease;
     }}
     
-    /* Efecto de Pestaña Seleccionada: Gris Claro + Linea Roja */
+    /* Pestaña seleccionada: fondo gris claro y ELIMINAR LINEA ROJA */
     .stTabs [aria-selected="true"] {{ 
         color: #CC0000 !important; 
-        background-color: #f5f5f5 !important; /* Gris claro solicitado */
-        border-bottom: 4px solid #CC0000 !important;
+        background-color: #f5f5f5 !important;
+        border-bottom: none !important; /* Aquí quitamos la línea roja redundante */
     }}
+    
+    /* Ocultar el indicador de pestaña de Streamlit que a veces aparece */
+    [data-baseweb="tab-highlight"] {{ display: none !important; }}
 
     /* TARJETAS DE CONTENIDO */
     .card {{ 
