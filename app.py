@@ -25,50 +25,55 @@ logo_base64 = get_base64("logo_wurth.jpg")
 red_stripe_base64 = get_base64("logo_red_stripe.png")
 font_bold = get_base64("WuerthBold.ttf")
 
-# --- CSS REFINADO (OPACIDAD AL 15%) ---
+# --- CSS REFINADO ---
 st.markdown(f"""
     <style>
     @font-face {{ font-family: 'WuerthBold'; src: url('data:font/ttf;base64,{font_bold}'); }}
     
     .stApp {{ background: none; }}
     
-    /* Capa de fondo con opacidad reducida para que apenas se vea */
     .bg-layer {{
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
         z-index: -1; 
         background-image: url("data:image/png;base64,{get_base64(fondo_path)}");
-        background-size: cover; 
-        background-position: center; 
-        opacity: 0.15; /* AJUSTE: Ahora es casi imperceptible */
+        background-size: cover; background-position: center; 
+        opacity: 0.10; /* Fondo casi imperceptible */
     }}
 
     [data-testid="block-container"] {{
-        background-color: #F2F2F2; padding: 0 !important; border-radius: 12px;
+        background-color: rgba(242, 242, 242, 0.9); /* Fondo gris claro con bloque sólido */
+        padding: 0 !important; border-radius: 12px;
         box-shadow: 0px 15px 50px rgba(0,0,0,0.3); max-width: 950px; margin-top: 30px;
     }}
 
+    /* Cabecera con Título Centrado */
     .header-container {{
         display: flex; background-color: white; height: 160px; border-radius: 12px 12px 0 0;
-        border-bottom: 2px solid #eee;
     }}
     .header-logo {{ flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }}
     .header-title {{
         flex: 2.5; background-color: #CC0000; display: flex; align-items: center; 
-        justify-content: flex-start; padding-left: 60px; /* Separación solicitada */
+        justify-content: center; /* TÍTULO CENTRADO */
     }}
-    .header-title h1 {{ color: white !important; font-family: 'WuerthBold'; font-size: 50px !important; margin: 0; }}
+    .header-title h1 {{ color: white !important; font-family: 'WuerthBold'; font-size: 55px !important; margin: 0; text-align: center; }}
+
+    /* Estilo de Tabs (Menú) */
+    .stTabs [data-baseweb="tab-list"] {{ gap: 10px; }}
+    .stTabs [data-baseweb="tab"] {{
+        font-family: 'WuerthBold' !important; font-size: 20px !important;
+        height: 60px; color: #333;
+    }}
 
     .info-block {{
         background-color: white; padding: 30px; border-radius: 15px;
         box-shadow: 0px 5px 15px rgba(0,0,0,0.05); margin-bottom: 20px;
-        border: 1px solid #eef;
     }}
     
-    .discount-number {{
-        color: #CC0000; font-family: 'WuerthBold'; font-size: 90px; text-align: center; margin: 10px 0;
+    .discount-big {{
+        color: #CC0000; font-family: 'WuerthBold'; font-size: 110px; text-align: center; margin: 0;
     }}
     
-    .footer-logo {{ position: fixed; bottom: 20px; right: 20px; width: 160px; opacity: 0.9; }}
+    .footer-logo {{ position: fixed; bottom: 20px; right: 20px; width: 150px; opacity: 0.8; }}
     </style>
     <div class="bg-layer"></div>
     """, unsafe_allow_html=True)
@@ -76,71 +81,66 @@ st.markdown(f"""
 # --- CABECERA ---
 st.markdown(f"""
     <div class="header-container">
-        <div class="header-logo"><img src="data:image/jpeg;base64,{logo_base64}" width="110"></div>
+        <div class="header-logo"><img src="data:image/jpeg;base64,{logo_base64}" width="120"></div>
         <div class="header-title"><h1>PLAN RECAMBIO</h1></div>
     </div>
     """, unsafe_allow_html=True)
 
-tabs = st.tabs(["📊 1. Calculadora", "🛠️ 2. Catálogo", "📝 3. Consolidación"])
+# Pestañas con nombres actualizados
+tabs = st.tabs(["📊 1. Calculadora", "🛠️ 2. Catálogo", "📝 3. Pedido"])
 
-# --- TAB 1: CALCULADORA DE ENTREGAS ---
+# --- TAB 1: CALCULADORA ---
 with tabs[0]:
-    st.markdown("<h3 style='color: #CC0000; font-family: WuerthBold; padding-top:20px;'>Ingresar lo que entrega el cliente</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #CC0000; font-family: WuerthBold; padding: 20px 0 10px 0;'>Ingresar lo que entrega el cliente</h3>", unsafe_allow_html=True)
     
-    c_left, c_right = st.columns([1.1, 0.9])
+    c_input, c_result = st.columns([1.2, 0.8])
     
-    with c_left:
+    with c_input:
         st.markdown('<div class="info-block">', unsafe_allow_html=True)
-        q_completa = st.number_input("Máquina Completa (20% c/u)", min_value=0, step=1, value=0)
-        q_sin_bat = st.number_input("Máquina sin batería (10% c/u)", min_value=0, step=1, value=0)
-        q_solo_bat = st.number_input("Batería o Cargador (5% c/u)", min_value=0, step=1, value=0)
+        # Menú desplegable para opciones de entrega
+        opcion_entrega = st.selectbox(
+            "Seleccione tipo de entrega:",
+            ["Máquina Completa (20%)", "Máquina sin batería (10%)", "Solo Batería o Cargador (5%)"]
+        )
+        cantidad = st.number_input("Cantidad entregada:", min_value=0, step=1, value=1)
+        
+        # Mapeo de valores para el cálculo
+        val_map = {"Máquina Completa (20%)": 20, "Máquina sin batería (10%)": 10, "Solo Batería o Cargador (5%)": 5}
+        puntos_base = val_map[opcion_entrega] * cantidad
+        
+        st.info(f"Has seleccionado {cantidad} unidad(es) de: {opcion_entrega}")
         st.markdown('</div>', unsafe_allow_html=True)
 
-    with c_right:
+    with c_result:
         st.markdown('<div class="info-block" style="text-align:center;">', unsafe_allow_html=True)
-        st.write("**Descuento Máximo por Unidad**")
+        st.write("**Descuento Calculado**")
         
-        # Lógica de negocio
-        items = q_completa + q_sin_bat + q_solo_bat
-        suma_puntos = (q_completa * 20) + (q_sin_bat * 10) + (q_solo_bat * 5)
-        
-        # Tope según cantidad de herramientas
-        if items >= 3:
-            dto_final = min(suma_puntos, 30)
-        elif items > 0:
-            dto_final = min(suma_puntos, 20)
+        # Lógica de tope de descuento
+        if cantidad >= 3:
+            dto_final = min(puntos_base, 30)
+        elif cantidad > 0:
+            dto_final = min(puntos_base, 20)
         else:
             dto_final = 0
             
-        st.markdown(f'<div class="discount-number">{dto_final}%</div>', unsafe_allow_html=True)
-        st.markdown(f"**Total entregado:** {items} componentes", unsafe_allow_html=True)
+        st.markdown(f'<div class="discount-big">{dto_final}%</div>', unsafe_allow_html=True)
+        if st.button("Guardar para el Pedido", use_container_width=True):
+            st.session_state['dto_final'] = dto_final
+            st.balloons()
         st.markdown('</div>', unsafe_allow_html=True)
-        
-        if st.button("Guardar Beneficio", use_container_width=True):
-            st.session_state['dto_val'] = dto_final
-            st.toast(f"¡Beneficio del {dto_final}% guardado!")
 
 # --- TAB 2: CATÁLOGO ---
 with tabs[1]:
-    st.markdown("<h3 style='color: #CC0000; font-family: WuerthBold; padding-top:20px;'>Selección de Herramienta a Comprar</h3>", unsafe_allow_html=True)
-    
+    st.markdown("<h3 style='color: #CC0000; font-family: WuerthBold; padding-top:20px;'>Catálogo de Herramientas</h3>", unsafe_allow_html=True)
     st.markdown('<div class="info-block">', unsafe_allow_html=True)
+    # Lógica de catálogo similar a la anterior pero con diseño limpio
     prod_path = "assets/productos"
     if os.path.exists(prod_path):
-        opciones = [f for f in os.listdir(prod_path) if f.endswith('.png')]
-        seleccion = st.selectbox("Elija la herramienta de catálogo:", opciones)
-        
-        col_img, col_txt = st.columns([1, 1])
-        with col_img:
-            st.image(os.path.join(prod_path, seleccion), use_container_width=True)
-        with col_txt:
-            dto_activo = st.session_state.get('dto_val', 0)
-            st.markdown(f"### Descuento Aplicable: <span style='color:red'>{dto_activo}%</span>", unsafe_allow_html=True)
-            st.markdown(f"**Modelo:** {seleccion}")
-            if st.button("Confirmar Selección", use_container_width=True):
-                st.success(f"Añadido: {seleccion} con -{dto_activo}%")
+        productos = [f for f in os.listdir(prod_path) if f.endswith('.png')]
+        sel = st.selectbox("Seleccione herramienta del catálogo:", productos)
+        st.image(os.path.join(prod_path, sel), width=300)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# Footer Logo flotante
+# Footer
 if red_stripe_base64:
     st.markdown(f'<img src="data:image/png;base64,{red_stripe_base64}" class="footer-logo">', unsafe_allow_html=True)
