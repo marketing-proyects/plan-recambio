@@ -4,164 +4,139 @@ import os
 import random
 
 # --- FUNCIONES DE SOPORTE ---
-
 def get_base64(file_path):
-    with open(file_path, "rb") as f:
-        data = f.read()
-    return base64.b64encode(data).decode()
+    if os.path.exists(file_path):
+        with open(file_path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    return ""
 
 def get_random_bg():
-    # Buscamos en la raíz o assets según tu estructura
-    bg_dir = "assets2/fondos" if os.path.exists("assets2/fondos") else "."
-    fondos = [f for f in os.listdir(bg_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
-    return os.path.join(bg_dir, random.choice(fondos)) if fondos else None
+    bg_dir = "assets2/fondos"
+    if os.path.exists(bg_dir):
+        fondos = [f for f in os.listdir(bg_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+        return os.path.join(bg_dir, random.choice(fondos)) if fondos else None
+    return None
 
-# --- CONFIGURACIÓN DE PÁGINA ---
+# --- CONFIGURACIÓN ---
 st.set_page_config(page_title="Würth Plan Recambio", layout="centered")
 
-# Selección de fondo aleatorio
 fondo_path = get_random_bg()
-fondo_base64 = get_base64(fondo_path) if fondo_path else ""
+logo_base64 = get_base64("logo_wurth.jpg")
+red_stripe_base64 = get_base64("logo_red_stripe.png")
+font_bold = get_base64("WuerthBold.ttf")
 
-# Carga de imágenes para la interfaz
-logo_wurth = get_base64("logo_wurth.jpg") if os.path.exists("logo_wurth.jpg") else ""
-red_stripe = get_base64("logo_red_stripe.png") if os.path.exists("logo_red_stripe.png") else ""
-
-# --- CSS PERSONALIZADO (Fuentes y Maquetación) ---
+# --- CSS MEJORADO ---
 st.markdown(f"""
     <style>
-    @font-face {{
-        font-family: 'WuerthBold';
-        src: url('data:font/ttf;base64,{get_base64("WuerthBold.ttf")}');
-    }}
-    @font-face {{
-        font-family: 'WuerthBook';
-        src: url('data:font/ttf;base64,{get_base64("WuerthBook.ttf")}');
-    }}
-
-    /* Fondo Aleatorio con Opacidad Aislada */
-    .stApp {{
-        background: none;
-    }}
+    @font-face {{ font-family: 'WuerthBold'; src: url('data:font/ttf;base64,{font_bold}'); }}
+    
+    .stApp {{ background: none; }}
     .bg-layer {{
-        position: fixed;
-        top: 0; left: 0; width: 100vw; height: 100vh;
-        z-index: -1;
-        background-image: url("data:image/png;base64,{fondo_base64}");
-        background-size: cover;
-        background-position: center;
-        opacity: 0.7;
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        z-index: -1; background-image: url("data:image/png;base64,{get_base64(fondo_path)}");
+        background-size: cover; background-position: center; opacity: 0.7;
     }}
 
-    /* Contenedor Principal (Rectángulo de Seguridad) */
+    /* Rectángulo de Seguridad y Contenedores */
     [data-testid="block-container"] {{
-        background-color: #F2F2F2;
-        padding: 0 !important;
-        margin-top: 30px;
-        border-radius: 8px;
-        box-shadow: 0px 10px 40px rgba(0,0,0,0.4);
-        max-width: 900px;
-        font-family: 'WuerthBook', sans-serif;
+        background-color: #F2F2F2; padding: 0 !important; border-radius: 10px;
+        box-shadow: 0px 10px 40px rgba(0,0,0,0.4); max-width: 950px; margin-top: 20px;
     }}
 
-    /* Cabecera Exacta */
     .header-container {{
-        display: flex;
-        background-color: white;
-        height: 180px;
-        border-top-left-radius: 8px;
-        border-top-right-radius: 8px;
-        overflow: hidden;
+        display: flex; background-color: white; height: 160px; border-radius: 10px 10px 0 0;
     }}
-    .header-logo {{
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-    }}
+    .header-logo {{ flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }}
     .header-title {{
-        flex: 2.5;
-        background-color: #CC0000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        flex: 2.5; background-color: #CC0000; display: flex; align-items: center; 
+        justify-content: flex-start; padding-left: 50px; /* Separación borde izquierdo */
     }}
-    .header-title h1 {{
-        color: white !important;
-        font-family: 'WuerthBold', sans-serif;
-        font-size: 60px !important;
-        margin: 0;
-        letter-spacing: 1px;
-    }}
+    .header-title h1 {{ color: white !important; font-family: 'WuerthBold'; font-size: 55px !important; margin: 0; }}
 
-    /* Estilo de Tarjetas Blancas */
-    .card {{
-        background-color: white;
-        padding: 25px;
-        border-radius: 10px;
-        height: 100%;
-        box-shadow: 0px 2px 10px rgba(0,0,0,0.05);
+    /* Bloques de color para contener información */
+    .info-block {{
+        background-color: white; padding: 25px; border-radius: 12px;
+        box-shadow: 0px 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px;
     }}
-
-    /* Franja Roja inferior decorativa */
-    .footer-stripe {{
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        width: 200px;
-        opacity: 0.8;
+    
+    .discount-display {{
+        color: #CC0000; font-family: 'WuerthBold'; font-size: 80px; text-align: center; margin: 0;
     }}
+    
+    .footer-logo {{ position: fixed; bottom: 20px; right: 20px; width: 180px; }}
     </style>
     <div class="bg-layer"></div>
     """, unsafe_allow_html=True)
 
-# --- ESTRUCTURA VISUAL ---
-
-# 1. Cabecera Estilo Würth
+# --- CABECERA ---
 st.markdown(f"""
     <div class="header-container">
-        <div class="header-logo">
-            <img src="data:image/jpeg;base64,{logo_wurth}" width="120">
-        </div>
-        <div class="header-title">
-            <h1>PLAN RECAMBIO</h1>
-        </div>
+        <div class="header-logo"><img src="data:image/jpeg;base64,{logo_base64}" width="120"></div>
+        <div class="header-title"><h1>PLAN RECAMBIO</h1></div>
     </div>
     """, unsafe_allow_html=True)
 
-# 2. Navegación (Tabs)
 tab1, tab2, tab3 = st.tabs(["📊 1. Calculadora", "🛠️ 2. Catálogo", "📝 3. Consolidación"])
 
+# --- LÓGICA DE DESCUENTOS ---
 with tab1:
-    st.markdown("<h3 style='color: #CC0000; font-family: WuerthBold; margin-top: 20px;'>Cálculo de Beneficio</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #CC0000; font-family: WuerthBold; margin-top:20px;'>Ingresar lo que entrega el cliente</h3>", unsafe_allow_html=True)
     
-    col1, col2 = st.columns(2)
+    col_input, col_res = st.columns([1.2, 1])
     
-    with col1:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("<p style='color: #CC0000; font-family: WuerthBold;'>Complete lo que el cliente entrega:</p>", unsafe_allow_html=True)
+    with col_input:
+        st.markdown('<div class="info-block">', unsafe_allow_html=True)
+        q_completa = st.number_input("Máquina Completa (20% dto)", min_value=0, step=1)
+        q_sin_bat = st.number_input("Máquina sin batería (10% dto)", min_value=0, step=1)
+        q_solo_bat = st.number_input("Solo Batería o Cargador (5% dto)", min_value=0, step=1)
         
-        # Selector de productos desde assets/productos
-        prod_path = "assets/productos"
-        opciones = os.listdir(prod_path) if os.path.exists(prod_path) else ["Sin archivos"]
-        seleccion = st.selectbox("Máquina Completa", opciones)
-        
-        if os.path.exists(os.path.join(prod_path, seleccion)):
-            st.image(os.path.join(prod_path, seleccion), width=180)
-        
-        st.number_input("Cantidad", min_value=1, value=1)
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-    with col2:
-        st.markdown('<div class="card" style="text-align: center;">', unsafe_allow_html=True)
-        st.markdown("<p style='color: #CC0000; font-family: WuerthBold;'>Descuento Aplicable</p>", unsafe_allow_html=True)
-        st.markdown("<h1 style='font-size: 100px; font-family: WuerthBold; color: #CC0000; margin: 10px 0;'>20%</h1>", unsafe_allow_html=True)
-        
-        if st.button("Calcular y Aplicar"):
-            st.success("¡Descuento aplicado con éxito!")
+        total_items = q_completa + q_sin_bat + q_solo_bat
         st.markdown('</div>', unsafe_allow_html=True)
 
-# 3. Logo Red Stripe (Decorativo en esquina)
-if red_stripe:
-    st.markdown(f'<img src="data:image/png;base64,{red_stripe}" class="footer-stripe">', unsafe_allow_html=True)
+    with col_res:
+        st.markdown('<div class="info-block" style="text-align:center;">', unsafe_allow_html=True)
+        st.write("**Descuento Calculado**")
+        
+        # Lógica de tope de descuento por unidad
+        # Máximo 20% para 1 o 2 herramientas, 30% para 3 o más
+        base_dto = (q_completa * 20) + (q_sin_bat * 10) + (q_solo_bat * 5)
+        
+        if total_items >= 3:
+            final_dto = min(base_dto, 30)
+        elif total_items > 0:
+            final_dto = min(base_dto, 20)
+        else:
+            final_dto = 0
+            
+        st.markdown(f'<p class="discount-display">{final_dto}%</p>', unsafe_allow_html=True)
+        st.write(f"Items entregados: {total_items}")
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        if st.button("Confirmar para Selección", use_container_width=True):
+            st.session_state['dto_ganado'] = final_dto
+            st.info("Descuento guardado. Pasa a la pestaña de Catálogo.")
+
+# --- CATÁLOGO ---
+with tab2:
+    st.markdown("<h3 style='color: #CC0000; font-family: WuerthBold; margin-top:20px;'>Selección de Herramienta</h3>", unsafe_allow_html=True)
+    
+    st.markdown('<div class="info-block">', unsafe_allow_html=True)
+    prod_path = "assets/productos"
+    if os.path.exists(prod_path):
+        opciones = os.listdir(prod_path)
+        seleccion = st.selectbox("Elija la herramienta para aplicar el descuento:", opciones)
+        
+        c1, c2 = st.columns(2)
+        with c1:
+            st.image(os.path.join(prod_path, seleccion), width=250)
+        with c2:
+            dto = st.session_state.get('dto_ganado', 0)
+            st.markdown(f"### Descuento a aplicar: <span style='color:red'>{dto}%</span>", unsafe_allow_html=True)
+            st.write(f"Producto: {seleccion}")
+            if st.button("Agregar a Consolidación"):
+                st.success("Agregado con éxito.")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# Footer Logo
+if red_stripe_base64:
+    st.markdown(f'<img src="data:image/png;base64,{red_stripe_base64}" class="footer-logo">', unsafe_allow_html=True)
