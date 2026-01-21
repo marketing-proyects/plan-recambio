@@ -29,7 +29,7 @@ if 'bg_actual' not in st.session_state and fondos:
 if 'prod_actual' not in st.session_state and productos:
     st.session_state.prod_actual = random.choice(productos)
 
-# --- ESTILOS "BLACK LABEL" ---
+# --- ESTILOS BLACK LABEL ---
 bg_base64 = get_base64(os.path.join(path_fondos, st.session_state.bg_actual)) if fondos else ""
 
 st.markdown(f"""
@@ -38,9 +38,9 @@ st.markdown(f"""
     @font-face {{ font-family: 'WuerthBook'; src: url(data:font/ttf;base64,{f_book}); }}
     @font-face {{ font-family: 'WuerthExtra'; src: url(data:font/ttf;base64,{f_extra}); }}
 
-    /* Fondo con opacidad al 75% (Punto 1) */
+    /* Fondo con opacidad al 75% sobre NEGRO */
     .stApp {{
-        background: linear-gradient(rgba(18, 18, 18, 0.75), rgba(18, 18, 18, 0.75)), 
+        background: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)), 
                     url(data:image/jpg;base64,{bg_base64});
         background-size: cover;
         background-position: center;
@@ -49,92 +49,76 @@ st.markdown(f"""
 
     html, body, [class*="css"] {{ font-family: 'WuerthBook', sans-serif; color: white; }}
     
-    /* Contenedor de Logos (Punto 2) */
+    /* Header con logos posicionados */
     .header-container {{
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 10px 30px;
+        padding: 10px 0px;
     }}
 
-    .product-card {{
+    /* ELIMINACIÓN DEL CUADRO GRIS: Contenedor Invisible */
+    .product-visual-container {{
         position: relative;
-        background-color: rgba(30, 30, 30, 0.85); /* Gris muy oscuro con transparencia */
-        padding: 40px;
-        border-radius: 20px;
         text-align: center;
-        box-shadow: 0 15px 50px rgba(0,0,0,0.5);
-        border: 1px solid rgba(255,255,255,0.1);
+        padding: 20px;
+        background: transparent; /* Eliminamos el fondo gris/blanco */
     }}
 
-    /* Badge de Descuento Black & Red */
     .discount-badge {{
         position: absolute;
-        top: -15px;
-        right: -15px;
+        top: 0px;
+        right: 15%;
         background-color: #CC0000;
         color: white;
-        width: 90px;
-        height: 90px;
+        width: 100px;
+        height: 100px;
         border-radius: 50%;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         font-family: 'WuerthExtra';
-        box-shadow: 0 5px 20px rgba(204,0,0,0.6);
-        z-index: 100;
-        border: 3px solid #1e1e1e;
+        box-shadow: 0 4px 20px rgba(204,0,0,0.6);
+        z-index: 10;
+        border: 2px solid white;
     }}
 
-    /* Botones Estilo Negro/Gris */
+    /* Botoneras Estilo Negro Label */
     .stButton>button {{
-        background-color: #000000;
+        background-color: #121212;
         color: white;
         font-family: 'WuerthBold';
-        border: 1px solid #444;
-        border-radius: 4px;
-        padding: 12px;
+        border: 1px solid #333;
+        border-radius: 0px; /* Estilo más industrial */
+        padding: 15px;
         width: 100%;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        transition: 0.3s;
     }}
     .stButton>button:hover {{
-        background-color: #CC0000; /* Rojo solo en el hover para impacto */
+        background-color: #CC0000;
         border: 1px solid #CC0000;
-        color: white;
     }}
 
-    /* Estilo de los Tabs en modo oscuro */
-    .stTabs [data-baseweb="tab-list"] {{ background-color: transparent; }}
-    .stTabs [data-baseweb="tab"] {{
-        color: #999;
-        font-family: 'WuerthBold';
-    }}
-    .stTabs [data-baseweb="tab"]:hover {{ color: white; }}
-    .stTabs [aria-selected="true"] {{ color: white !important; border-bottom-color: #CC0000 !important; }}
+    /* Input styling */
+    .stSelectbox label, .stNumberInput label {{ color: #999 !important; font-family: 'WuerthBold'; }}
     </style>
 """, unsafe_allow_html=True)
 
-# --- HEADER (Punto 2: Re-ubicación de logos) ---
-# Usamos HTML para tener control total de la posición
+# --- HEADER ---
 logo_w_b64 = get_base64("logo_wurth.jpg")
 logo_rs_b64 = get_base64("logo_red_stripe.jpg")
 
 st.markdown(f'''
     <div class="header-container">
-        <div style="flex: 1;">
-            <img src="data:image/jpg;base64,{logo_rs_b64}" width="220" style="filter: brightness(1.1);">
-        </div>
-        <div style="flex: 1; text-align: right;">
-            <img src="data:image/jpg;base64,{logo_w_b64}" width="90" style="opacity: 0.8;">
-        </div>
+        <div><img src="data:image/jpg;base64,{logo_rs_b64}" width="280"></div>
+        <div><img src="data:image/jpg;base64,{logo_w_b64}" width="80"></div>
     </div>
 ''', unsafe_allow_html=True)
 
-st.markdown("<h1 style='color: white; font-family: WuerthExtra; font-size: 3rem; text-align: center; margin-bottom: 30px;'>PLAN RECAMBIO</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='color: white; font-family: WuerthExtra; font-size: 3rem; text-align: center;'>PLAN RECAMBIO</h1>", unsafe_allow_html=True)
 
-# --- NAVEGACIÓN ---
 tabs = st.tabs(["📊 CALCULADORA", "🛠️ CATÁLOGO", "📝 CONSOLIDACIÓN"])
 
 with tabs[0]:
@@ -152,19 +136,28 @@ with tabs[0]:
             st.rerun()
 
     with col_img:
-        st.markdown('<div class="product-card">', unsafe_allow_html=True)
+        # Aquí eliminamos el div con fondo y usamos uno transparente
+        st.markdown('<div class="product-visual-container">', unsafe_allow_html=True)
         
+        # Badge flotante
         if st.session_state.get('descuento_seleccionado', 0) > 0:
-            st.markdown(f'''<div class="discount-badge"><span style="font-size:38px;">{st.session_state.descuento_seleccionado}%</span><span style="font-size:10px;">OFF</span></div>''', unsafe_allow_html=True)
+            st.markdown(f'''
+                <div class="discount-badge">
+                    <span style="font-size:42px; line-height:1;">{st.session_state.descuento_seleccionado}%</span>
+                    <span style="font-size:12px;">OFF</span>
+                </div>
+            ''', unsafe_allow_html=True)
         
         if productos:
             img_path = os.path.join(path_prod, st.session_state.prod_actual)
-            st.image(img_path, width=380)
+            # La imagen ahora flota sobre el fondo de la app al 75%
+            st.image(img_path, width=400)
             nombre = st.session_state.prod_actual.split('.')[0].replace('_', ' ').upper()
-            st.markdown(f'<p style="font-family:WuerthBold; font-size:1.4rem; color:white; letter-spacing:1px;">{nombre}</p>', unsafe_allow_html=True)
+            st.markdown(f'<p style="font-family:WuerthBold; font-size:1.5rem; color:white; margin-top:10px;">{nombre}</p>', unsafe_allow_html=True)
         
         if st.button("🔄 ACTUALIZAR VISTA"):
             if fondos: st.session_state.bg_actual = random.choice(fondos)
             if productos: st.session_state.prod_actual = random.choice(productos)
             st.rerun()
+        
         st.markdown('</div>', unsafe_allow_html=True)
