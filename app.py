@@ -118,7 +118,7 @@ with t1:
     with c2:
         val = (qc * 20) + (qs * 10) + (qb * 5)
         st.markdown(f'<div style="text-align:center; margin-top:20px;"><b>Bolsa Disponible</b><div class="big-num">{val}%</div></div>', unsafe_allow_html=True)
-        if st.button("TOTAL DESCUENTOS", use_container_width=True):
+        if st.button("GENERAR % DTO.", use_container_width=True):
             st.session_state.bolsa_puntos = val
             st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
