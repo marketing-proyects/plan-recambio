@@ -28,7 +28,7 @@ if 'idx' not in st.session_state: st.session_state.idx = 0
 if 'bg' not in st.session_state and fondos: st.session_state.bg = random.choice(fondos)
 if 'descuento' not in st.session_state: st.session_state.descuento = 0
 
-# --- CSS DE PRECISIÓN ---
+# --- CSS DE ALTO IMPACTO (FONDO Y GLOBO) ---
 bg_data = get_base64(os.path.join(path_fondos, st.session_state.bg)) if fondos else ""
 
 st.markdown(f"""
@@ -36,30 +36,30 @@ st.markdown(f"""
     @font-face {{ font-family: 'WuerthBold'; src: url(data:font/ttf;base64,{f_bold}); }}
     @font-face {{ font-family: 'WuerthExtra'; src: url(data:font/ttf;base64,{f_extra}); }}
 
+    /* Fondo corregido para que se aprecien las imágenes de assets2 */
     .stApp {{
-        background: linear-gradient(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3)), 
+        background: linear-gradient(rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.25)), 
                     url(data:image/jpeg;base64,{bg_data}) no-repeat center center fixed;
         background-size: cover;
     }}
 
-    /* Contenedor Principal Ajustado */
-    .viewport-container {{
+    /* Contenedor central compacto */
+    .showcase-wrapper {{
         position: relative;
-        width: 100%;
-        max-width: 600px; /* Herramientas más pequeñas, no ocupan toda la pantalla */
+        max-width: 650px;
         margin: 0 auto;
         text-align: center;
     }}
 
-    /* GLOBO PEGADO A LA HERRAMIENTA */
-    .sticker-badge {{
+    /* GLOBO DE DESCUENTO: Grande y sobre la herramienta */
+    .discount-sticker {{
         position: absolute;
-        top: 10px;
-        right: 0px;
+        top: 20px;
+        right: 20px;
         background: #CC0000;
         color: white;
-        width: 130px;
-        height: 130px;
+        width: 150px;
+        height: 150px;
         border-radius: 50%;
         display: flex;
         flex-direction: column;
@@ -67,29 +67,28 @@ st.markdown(f"""
         justify-content: center;
         font-family: 'WuerthExtra';
         border: 4px solid white;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-        z-index: 99;
-        transform: rotate(5deg);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        z-index: 100;
+        transform: rotate(10deg);
     }}
 
-    .tool-title {{
+    .tool-label-black {{
         font-family: 'WuerthBold';
-        font-size: 1.8rem;
+        font-size: 2.2rem;
         color: white;
         background: #121212;
-        padding: 8px 20px;
+        padding: 10px 25px;
         display: inline-block;
-        margin-top: -15px;
+        margin-top: -20px;
     }}
 
-    /* Estilo Calculadora */
-    .calc-box {{
+    /* Estilo de la calculadora */
+    .calc-section {{
         background: rgba(255, 255, 255, 0.9);
-        padding: 20px;
-        border-radius: 10px;
-        border-top: 5px solid #CC0000;
-        margin-top: 20px;
-        color: #121212;
+        padding: 25px;
+        border-radius: 15px;
+        margin-top: 30px;
+        border-top: 6px solid #CC0000;
     }}
 
     .stButton>button {{
@@ -97,66 +96,62 @@ st.markdown(f"""
         color: white;
         border-radius: 0;
         font-family: 'WuerthBold';
-        width: 100%;
+        height: 3rem;
     }}
     </style>
 """, unsafe_allow_html=True)
 
 # --- HEADER ---
 st.markdown(f'''
-    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 30px;">
-        <img src="data:image/png;base64,{logo_rs}" width="250">
-        <img src="data:image/jpg;base64,{logo_w}" width="130">
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 40px;">
+        <img src="data:image/png;base64,{logo_rs}" width="300">
+        <img src="data:image/jpg;base64,{logo_w}" width="150">
     </div>
 ''', unsafe_allow_html=True)
 
-st.markdown("<h1 style='text-align:center; color:#CC0000; font-family:WuerthExtra;'>PLAN RECAMBIO</h1>", unsafe_allow_html=True)
-
-# --- AREA VISUAL ---
+# --- ESCENARIO DE PRODUCTO ---
 if productos:
     img_actual = productos[st.session_state.idx]
     
-    st.markdown('<div class="viewport-container">', unsafe_allow_html=True)
+    st.markdown('<div class="showcase-wrapper">', unsafe_allow_html=True)
     
-    # Globo dinámico
+    # Globo de Descuento
     if st.session_state.descuento > 0:
         st.markdown(f'''
-            <div class="sticker-badge">
-                <span style="font-size:50px; line-height:1;">{st.session_state.descuento}%</span>
-                <span style="font-size:15px;">OFF</span>
+            <div class="discount-sticker">
+                <span style="font-size:60px; line-height:1;">{st.session_state.descuento}%</span>
+                <span style="font-size:20px;">OFF</span>
             </div>
         ''', unsafe_allow_html=True)
     
     # Imagen de Herramienta (Tamaño controlado)
-    st.image(os.path.join(path_prod, img_actual), width=450)
+    st.image(os.path.join(path_prod, img_actual), width=500)
     
-    # Nombre
+    # Etiqueta de Nombre
     nombre = img_actual.split('.')[0].replace('_', ' ').upper()
-    st.markdown(f'<div class="tool-title">{nombre}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="tool-label-black">{nombre}</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Navegación compacta
-    c1, c2, c3 = st.columns([1, 2, 1])
-    with c1:
-        if st.button("◀"):
+    # Navegación Simple
+    col_nav1, col_nav2 = st.columns(2)
+    with col_nav1:
+        if st.button("⬅️ ANTERIOR MODELO", use_container_width=True):
             st.session_state.idx = (st.session_state.idx - 1) % len(productos)
             st.rerun()
-    with c2:
-        if st.button("🎯 SELECCIONAR HERRAMIENTA"):
-            st.toast(f"Seleccionada: {nombre}")
-    with c3:
-        if st.button("▶"):
+    with col_nav2:
+        if st.button("SIGUIENTE MODELO ➡️", use_container_width=True):
             st.session_state.idx = (st.session_state.idx + 1) % len(productos)
             st.rerun()
 
-# --- CALCULADORA (REINTEGRADA) ---
-st.markdown('<div class="calc-box">', unsafe_allow_html=True)
-st.subheader("CALCULADORA DE DESCUENTO")
-col_c1, col_c2 = st.columns(2)
-with col_c1:
-    entrega = st.selectbox("¿Qué entrega el cliente?", ["Máquina Completa", "Máquina Parcial", "Solo Batería/Cargador"])
-with col_c2:
-    if st.button("APLICAR DESCUENTO"):
+# --- CALCULADORA ---
+st.markdown('<div class="calc-section">', unsafe_allow_html=True)
+st.markdown("<h3 style='color:#121212; font-family:WuerthBold;'>CÁLCULO DE BENEFICIO</h3>", unsafe_allow_html=True)
+c_sel, c_btn = st.columns([3, 1])
+with c_sel:
+    entrega = st.selectbox("¿Qué equipo entrega el cliente?", 
+                         ["Máquina Completa", "Máquina Parcial", "Solo Batería/Cargador"], label_visibility="collapsed")
+with c_btn:
+    if st.button("CALCULAR", use_container_width=True):
         if "Completa" in entrega: st.session_state.descuento = 25
         elif "Parcial" in entrega: st.session_state.descuento = 15
         else: st.session_state.descuento = 10
