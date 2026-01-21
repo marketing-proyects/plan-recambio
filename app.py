@@ -32,10 +32,9 @@ st.set_page_config(page_title="Würth Plan Recambio", layout="centered")
 
 fondo_path = get_random_bg()
 logo_base64 = get_base64("logo_wurth.jpg")
-red_stripe_base64 = get_base64("logo_red_stripe.png")
 f_bold = get_base64("WuerthBold.ttf")
 
-# --- CSS PARA CONVERTIR BLOQUES EN LÍNEAS FINAS ---
+# --- CSS PARA LIMPIEZA VISUAL Y TRANSPARENCIAS ---
 st.markdown(f"""
     <style>
     @font-face {{ font-family: 'WuerthBold'; src: url('data:font/ttf;base64,{f_bold}'); }}
@@ -55,12 +54,15 @@ st.markdown(f"""
         background-size: cover; background-position: center; opacity: 0.12;
     }}
 
-    /* ELIMINACIÓN DE FONDO DE INPUTS Y CONVERSIÓN A LÍNEA FINA */
-    div[data-testid="stTextInput"] {{
+    /* ELIMINACIÓN DE BLOQUES BLANCOS EN INPUTS (TEXTO Y NÚMEROS) */
+    div[data-testid="stTextInput"], div[data-testid="stNumberInput"], 
+    div[data-baseweb="input"], div[data-baseweb="base-input"] {{
         background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
     }}
     
-    div[data-testid="stTextInput"] input {{
+    div[data-testid="stTextInput"] input, div[data-testid="stNumberInput"] input {{
         background-color: transparent !important;
         border: none !important;
         border-bottom: 2px solid #CC0000 !important; /* Línea roja fina */
@@ -71,20 +73,17 @@ st.markdown(f"""
         color: #333 !important;
     }}
 
-    div[data-testid="stTextInput"] label {{
+    div[data-testid="stTextInput"] label, div[data-testid="stNumberInput"] label {{
         font-family: 'WuerthBold' !important;
         color: #CC0000 !important;
         font-size: 14px !important;
     }}
 
-    /* ELIMINAR BLOQUES BLANCOS RESIDUALES */
+    /* ELIMINAR BLOQUES RESIDUALES Y MARGENES EXTRA */
     [data-testid="stVerticalBlock"] > div:empty {{ display: none !important; }}
     .st-emotion-cache-1kyx60e {{ display: none !important; }} 
 
-    .main-body {{
-        background-color: transparent;
-        padding-bottom: 40px;
-    }}
+    .main-body {{ background-color: transparent; padding-bottom: 40px; }}
 
     /* CABECERA */
     .header-container {{
@@ -102,24 +101,14 @@ st.markdown(f"""
         text-align: center; line-height: 1.1;
     }}
 
-    /* MENÚ */
-    .stTabs [data-baseweb="tab-list"] {{ 
-        gap: 10px; padding: 10px 20px; 
-        background-color: transparent !important; 
-    }}
+    /* MENÚ PESTAÑAS */
+    .stTabs [data-baseweb="tab-list"] {{ gap: 10px; padding: 10px 20px; background-color: transparent !important; }}
     .stTabs [data-baseweb="tab"] {{
         font-family: 'WuerthBold' !important; font-size: 20px !important; 
         height: 60px; color: #666; flex: 1; text-align: center;
-        background-color: #e8e8e8;
-        border-radius: 12px 12px 0 0 !important; 
-        border: none !important;
+        background-color: #e8e8e8; border-radius: 12px 12px 0 0 !important; border: none !important;
     }}
-    
-    .stTabs [aria-selected="true"] {{ 
-        color: #CC0000 !important; 
-        background-color: #f5f5f5 !important;
-        border-bottom: none !important;
-    }}
+    .stTabs [aria-selected="true"] {{ color: #CC0000 !important; background-color: #f5f5f5 !important; }}
 
     /* TARJETAS */
     .card {{ 
@@ -132,11 +121,6 @@ st.markdown(f"""
         color: #CC0000; font-family: 'WuerthBold'; 
         font-size: 100px; text-align: center; 
         line-height: 1; margin-bottom: 25px;
-    }}
-    
-    .footer-logo {{ 
-        position: fixed; bottom: 20px; left: 20px; width: 280px; 
-        pointer-events: none; z-index: 10; opacity: 0.9;
     }}
     </style>
     <div class="bg-layer"></div>
@@ -152,7 +136,7 @@ st.markdown(f"""
 
 st.markdown('<div class="main-body">', unsafe_allow_html=True)
 
-# --- FICHA DE CLIENTE (TRANSFORMADA EN LÍNEAS) ---
+# --- FICHA DE CLIENTE ---
 c_nom, c_num = st.columns([1.5, 1])
 with c_nom:
     st.session_state.nombre_cliente = st.text_input("NOMBRE DEL CLIENTE", value=st.session_state.nombre_cliente, key="in_nom")
@@ -177,7 +161,7 @@ with t1:
         st.markdown(f'<div class="big-num">{val}%</div>', unsafe_allow_html=True)
         if st.button("SUMATORIA DE DESCUENTOS", use_container_width=True):
             st.session_state.bolsa_puntos = val
-            st.rerun()
+            st.success(f"Bolsa actualizada: {val}%")
         st.markdown('</div>', unsafe_allow_html=True)
 
 with t2:
@@ -200,10 +184,14 @@ with t2:
                 st.write(f"**Puntos disponibles:** {disp}%")
                 dto = st.slider("Asignar descuento (%)", 0, 30, value=min(disp, 30))
                 if st.button("AÑADIR AL PEDIDO", use_container_width=True):
-                    if disp >= dto:
+                    if disp >= dto and dto > 0:
                         st.session_state.carrito.append({"prod": sel, "dto": dto})
                         st.session_state.bolsa_puntos -= dto
                         st.rerun()
+                    elif dto == 0:
+                        st.error("El descuento debe ser mayor a 0%")
+                    else:
+                        st.error("Puntos insuficientes en la bolsa.")
     st.markdown('</div>', unsafe_allow_html=True)
 
 with t3:
@@ -214,5 +202,19 @@ with t3:
             ca, cb, cc = st.columns([3, 1, 1])
             ca.write(f"**{i+1}.** {item['prod']}")
             cb.write(f"**-{item['dto']}%**")
+            # CORRECCIÓN DE ELIMINACIÓN DE ITEM
             if cc.button("Quitar", key=f"del_{i}"):
-                st.session_state.bolsa_puntos += ite
+                st.session_state.bolsa_puntos += item['dto']
+                st.session_state.carrito.pop(i)
+                st.rerun()
+        
+        st.divider()
+        st.write(f"**Bolsa restante:** {st.session_state.bolsa_puntos}%")
+        if st.button("FINALIZAR RECAMBIO", use_container_width=True):
+            st.balloons()
+            st.success("Pedido registrado correctamente.")
+    else:
+        st.info("El carrito está vacío.")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
