@@ -1,40 +1,79 @@
 import streamlit as st
 import base64
 import os
+import random
 
-# Función para convertir imagen local a formato compatible con CSS
-def get_base64_of_bin_file(bin_file):
-    with open(bin_file, 'rb') as f:
+# 1. Lógica de selección aleatoria de fondo
+def get_random_bg():
+    bg_dir = "assets2/fondos"
+    if os.path.exists(bg_dir):
+        fondos = [f for f in os.listdir(bg_dir) if f.endswith(('.png', '.jpg', '.jpeg'))]
+        if fondos:
+            return os.path.join(bg_dir, random.choice(fondos))
+    return None
+
+def set_bg_with_opacity(image_file, opacity=0.7):
+    with open(image_file, "rb") as f:
         data = f.read()
-    return base64.b64encode(data).decode()
-
-def set_png_as_page_bg(bin_file):
-    bin_str = get_base64_of_bin_file(bin_file)
-    page_bg_img = f'''
-    <style>
-    .stApp {{
-        background-image: url("data:image/png;base64,{bin_str}");
-        background-size: cover;
-        background-attachment: fixed;
-    }}
+    base64_image = base64.b64encode(data).decode()
     
-    /* Rectángulo de seguridad (Contenedor central) */
-    [data-testid="block-container"] {{
-        background-color: rgba(255, 255, 255, 0.95); /* Blanco con leve transparencia */
-        padding: 3rem;
-        border-radius: 15px;
-        margin-top: 2rem;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    }}
-    </style>
-    '''
-    st.markdown(page_bg_img, unsafe_allow_html=True)
+    # CSS para capa de fondo aislada
+    st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background: none;
+        }}
+        .bg-container {{
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            overflow: hidden;
+        }}
+        .bg-container img {{
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: {opacity};
+        }}
+        
+        /* Ajuste del "Rectángulo de Seguridad" */
+        [data-testid="block-container"] {{
+            background-color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0px 4px 20px rgba(0,0,0,0.2);
+            margin-top: 2rem;
+            max-width: 900px;
+        }}
+        </style>
+        <div class="bg-container">
+            <img src="data:image/png;base64,{base64_image}">
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-# 1. Configuración de fondo
-# Elegimos uno de tus archivos en assets2/fondos (por ejemplo, el primero)
-fondo_path = "assets2/fondos/ai-generated-1762847146870.png" # Ajusta el nombre según tu archivo
-if os.path.exists(fondo_path):
-    set_png_as_page_bg(fondo_path)
+# --- Ejecución ---
+st.set_page_config(page_title="Würth - Plan Recambio", layout="wide")
 
-# --- El resto de tu lógica de la calculadora iría aquí abajo ---
-st.title("Calculadora Plan Recambio")
+# Aplicar fondo aleatorio con 70% de opacidad
+fondo_seleccionado = get_random_bg()
+if fondo_seleccionado:
+    set_bg_with_opacity(fondo_seleccionado, opacity=0.7)
+
+# Cabecera de la App
+st.image("logo_wurth.jpg", width=120)
+st.markdown("<h2 style='text-align: center; color: #333;'>Calculadora Plan Recambio</h2>", unsafe_allow_html=True)
+
+# Tabs principales
+tab1, tab2, tab3 = st.tabs(["1. Calculadora", "2. Catálogo", "3. Consolidación"])
+
+with tab1:
+    col_input, col_result = st.columns(2)
+    with col_input:
+        st.write("### Complete lo que el cliente entrega:")
+        # Aquí puedes seguir con los selectores de productos
