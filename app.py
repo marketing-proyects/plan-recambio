@@ -31,7 +31,7 @@ logo_base64 = get_base64("logo_wurth.jpg")
 red_stripe_base64 = get_base64("logo_red_stripe.png")
 f_bold = get_base64("WuerthBold.ttf")
 
-# --- CSS RESTAURADO Y AJUSTADO (SIN LÍNEA ROJA) ---
+# --- CSS ACTUALIZADO ---
 st.markdown(f"""
     <style>
     @font-face {{ font-family: 'WuerthBold'; src: url('data:font/ttf;base64,{f_bold}'); }}
@@ -51,7 +51,6 @@ st.markdown(f"""
         background-size: cover; background-position: center; opacity: 0.12;
     }}
 
-    /* Eliminar bloques fantasma de Streamlit */
     [data-testid="stVerticalBlock"] > div:empty {{ display: none !important; }}
 
     .main-body {{
@@ -75,7 +74,7 @@ st.markdown(f"""
         text-align: center; line-height: 1.1;
     }}
 
-    /* MENÚ: Sin línea roja, solo cambio de fondo */
+    /* MENÚ: Sin línea roja, fondo gris claro al seleccionar */
     .stTabs {{ background: transparent !important; border: none !important; }}
     .stTabs [data-baseweb="tab-list"] {{ 
         gap: 10px; padding: 10px 20px; 
@@ -89,14 +88,12 @@ st.markdown(f"""
         border: none !important;
     }}
     
-    /* Pestaña seleccionada: fondo gris claro y ELIMINAR LINEA ROJA */
     .stTabs [aria-selected="true"] {{ 
         color: #CC0000 !important; 
         background-color: #f5f5f5 !important;
-        border-bottom: none !important; /* Aquí quitamos la línea roja redundante */
+        border-bottom: none !important;
     }}
     
-    /* Ocultar el indicador de pestaña de Streamlit que a veces aparece */
     [data-baseweb="tab-highlight"] {{ display: none !important; }}
 
     /* TARJETAS DE CONTENIDO */
@@ -112,7 +109,16 @@ st.markdown(f"""
         line-height: 1; margin-bottom: 25px;
     }}
     
-    .footer-logo {{ position: fixed; bottom: 20px; right: 20px; width: 140px; pointer-events: none; }}
+    /* LOGO RED STRIPE: Doble de tamaño y a la IZQUIERDA ABAJO */
+    .footer-logo {{ 
+        position: fixed; 
+        bottom: 20px; 
+        left: 20px; /* Movido a la izquierda */
+        width: 280px; /* Doble de tamaño (era 140px) */
+        pointer-events: none; 
+        z-index: 10;
+        opacity: 0.9;
+    }}
     </style>
     <div class="bg-layer"></div>
     """, unsafe_allow_html=True)
@@ -141,7 +147,7 @@ with t1:
     with c2:
         st.markdown('<div class="card" style="text-align:center;">', unsafe_allow_html=True)
         val = (qc * 20) + (qs * 10) + (qb * 5)
-        st.write("**CALCULADORA PERSONAL DE DESCUENTOS**")
+        st.write("**Bolsa Disponible**")
         st.markdown(f'<div class="big-num">{val}%</div>', unsafe_allow_html=True)
         if st.button("SUMATORIA DE DESCUENTOS", use_container_width=True):
             st.session_state.bolsa_puntos = val
