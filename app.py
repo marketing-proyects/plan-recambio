@@ -141,7 +141,7 @@ with t1:
     with c2:
         st.markdown('<div class="card" style="text-align:center;">', unsafe_allow_html=True)
         val = (qc * 20) + (qs * 10) + (qb * 5)
-        st.write("**CALCULADORA PERSONAL DE DESCUENTOS**")
+        st.write("**Bolsa Disponible**")
         st.markdown(f'<div class="big-num">{val}%</div>', unsafe_allow_html=True)
         if st.button("SUMATORIA DE DESCUENTOS", use_container_width=True):
             st.session_state.bolsa_puntos = val
