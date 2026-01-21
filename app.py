@@ -3,127 +3,165 @@ import base64
 import os
 import random
 
-# 1. Función para seleccionar fondo aleatorio de tu carpeta assets2/fondos
-def get_random_bg():
-    bg_dir = "assets2/fondos"
-    if os.path.exists(bg_dir):
-        # Filtramos solo archivos de imagen
-        fondos = [f for f in os.listdir(bg_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
-        if fondos:
-            return os.path.join(bg_dir, random.choice(fondos))
-    return None
+# --- FUNCIONES DE SOPORTE ---
 
-def apply_custom_styles(bg_image_path):
-    with open(bg_image_path, "rb") as f:
+def get_base64(file_path):
+    with open(file_path, "rb") as f:
         data = f.read()
-    base64_image = base64.b64encode(data).decode()
-    
-    st.markdown(
-        f"""
-        <style>
-        /* Capa de fondo aislada con opacidad */
-        .stApp {{
-            background: none;
-        }}
-        .bg-layer {{
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: -1;
-            background-image: url("data:image/png;base64,{base64_image}");
-            background-size: cover;
-            background-position: center;
-            opacity: 0.7;
-        }}
+    return base64.b64encode(data).decode()
 
-        /* Contenedor Principal (El "Rectángulo de Seguridad") */
-        [data-testid="block-container"] {{
-            background-color: #f8f9fa;
-            padding: 0rem !important;
-            margin-top: 50px;
-            border-radius: 10px;
-            box-shadow: 0px 10px 30px rgba(0,0,0,0.5);
-            max-width: 950px;
-            overflow: hidden;
-        }}
+def get_random_bg():
+    # Buscamos en la raíz o assets según tu estructura
+    bg_dir = "assets2/fondos" if os.path.exists("assets2/fondos") else "."
+    fondos = [f for f in os.listdir(bg_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+    return os.path.join(bg_dir, random.choice(fondos)) if fondos else None
 
-        /* Estilo para las "Tarjetas" de información */
-        .info-card {{
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0px 2px 10px rgba(0,0,0,0.05);
-            height: 100%;
-        }}
+# --- CONFIGURACIÓN DE PÁGINA ---
+st.set_page_config(page_title="Würth Plan Recambio", layout="centered")
 
-        /* Ajuste de Tabs para que parezcan los de la imagen */
-        .stTabs [data-baseweb="tab-list"] {{
-            gap: 0px;
-            background-color: #eee;
-        }}
-        .stTabs [data-baseweb="tab"] {{
-            height: 50px;
-            background-color: #f1f1f1;
-            border: 1px solid #ddd;
-            flex-grow: 1;
-        }}
-        </style>
-        <div class="bg-layer"></div>
-        """,
-        unsafe_allow_html=True
-    )
+# Selección de fondo aleatorio
+fondo_path = get_random_bg()
+fondo_base64 = get_base64(fondo_path) if fondo_path else ""
 
-# --- Configuración Inicial ---
-st.set_page_config(page_title="Würth - Plan Recambio", layout="centered")
+# Carga de imágenes para la interfaz
+logo_wurth = get_base64("logo_wurth.jpg") if os.path.exists("logo_wurth.jpg") else ""
+red_stripe = get_base64("logo_red_stripe.png") if os.path.exists("logo_red_stripe.png") else ""
 
-# Aplicar fondo y estilos
-fondo = get_random_bg()
-if fondo:
-    apply_custom_styles(fondo)
+# --- CSS PERSONALIZADO (Fuentes y Maquetación) ---
+st.markdown(f"""
+    <style>
+    @font-face {{
+        font-family: 'WuerthBold';
+        src: url('data:font/ttf;base64,{get_base64("WuerthBold.ttf")}');
+    }}
+    @font-face {{
+        font-family: 'WuerthBook';
+        src: url('data:font/ttf;base64,{get_base64("WuerthBook.ttf")}');
+    }}
 
-# --- Maquetación de la Interfaz ---
+    /* Fondo Aleatorio con Opacidad Aislada */
+    .stApp {{
+        background: none;
+    }}
+    .bg-layer {{
+        position: fixed;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        z-index: -1;
+        background-image: url("data:image/png;base64,{fondo_base64}");
+        background-size: cover;
+        background-position: center;
+        opacity: 0.7;
+    }}
 
-# Header: Logo y Título Rojo
-header_html = """
-<div style="display: flex; background-color: white; align-items: stretch; border-bottom: 3px solid #cc0000;">
-    <div style="padding: 20px; flex: 1; display: flex; justify-content: center;">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Wuerth_Group_logo.svg/1200px-Wuerth_Group_logo.svg.png" width="80">
+    /* Contenedor Principal (Rectángulo de Seguridad) */
+    [data-testid="block-container"] {{
+        background-color: #F2F2F2;
+        padding: 0 !important;
+        margin-top: 30px;
+        border-radius: 8px;
+        box-shadow: 0px 10px 40px rgba(0,0,0,0.4);
+        max-width: 900px;
+        font-family: 'WuerthBook', sans-serif;
+    }}
+
+    /* Cabecera Exacta */
+    .header-container {{
+        display: flex;
+        background-color: white;
+        height: 180px;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+        overflow: hidden;
+    }}
+    .header-logo {{
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }}
+    .header-title {{
+        flex: 2.5;
+        background-color: #CC0000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }}
+    .header-title h1 {{
+        color: white !important;
+        font-family: 'WuerthBold', sans-serif;
+        font-size: 60px !important;
+        margin: 0;
+        letter-spacing: 1px;
+    }}
+
+    /* Estilo de Tarjetas Blancas */
+    .card {{
+        background-color: white;
+        padding: 25px;
+        border-radius: 10px;
+        height: 100%;
+        box-shadow: 0px 2px 10px rgba(0,0,0,0.05);
+    }}
+
+    /* Franja Roja inferior decorativa */
+    .footer-stripe {{
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 200px;
+        opacity: 0.8;
+    }}
+    </style>
+    <div class="bg-layer"></div>
+    """, unsafe_allow_html=True)
+
+# --- ESTRUCTURA VISUAL ---
+
+# 1. Cabecera Estilo Würth
+st.markdown(f"""
+    <div class="header-container">
+        <div class="header-logo">
+            <img src="data:image/jpeg;base64,{logo_wurth}" width="120">
+        </div>
+        <div class="header-title">
+            <h1>PLAN RECAMBIO</h1>
+        </div>
     </div>
-    <div style="background-color: #cc0000; flex: 3; display: flex; align-items: center; justify-content: center;">
-        <h1 style="color: white; margin: 0; font-family: sans-serif; letter-spacing: 2px;">PLAN RECAMBIO</h1>
-    </div>
-</div>
-"""
-st.markdown(header_html, unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
-# Tabs de navegación
-tab1, tab2, tab3 = st.tabs(["1. Calculadora", "2. Catálogo", "3. Consolidación"])
+# 2. Navegación (Tabs)
+tab1, tab2, tab3 = st.tabs(["📊 1. Calculadora", "🛠️ 2. Catálogo", "📝 3. Consolidación"])
 
 with tab1:
-    st.markdown("<h3 style='color: #cc0000; padding: 10px 0;'>Cálculo de Beneficio</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #CC0000; font-family: WuerthBold; margin-top: 20px;'>Cálculo de Beneficio</h3>", unsafe_allow_html=True)
     
-    col_izq, col_der = st.columns(2)
+    col1, col2 = st.columns(2)
     
-    with col_izq:
-        st.markdown('<div class="info-card">', unsafe_allow_html=True)
-        st.write("**Complete lo que el cliente entrega:**")
+    with col1:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown("<p style='color: #CC0000; font-family: WuerthBold;'>Complete lo que el cliente entrega:</p>", unsafe_allow_html=True)
         
-        # Selector dinámico basado en tus archivos de assets/productos
-        path_prod = "assets/productos"
-        lista_productos = [f for f in os.listdir(path_prod) if f.endswith('.png')] if os.path.exists(path_prod) else ["No hay productos"]
+        # Selector de productos desde assets/productos
+        prod_path = "assets/productos"
+        opciones = os.listdir(prod_path) if os.path.exists(prod_path) else ["Sin archivos"]
+        seleccion = st.selectbox("Máquina Completa", opciones)
         
-        seleccion = st.selectbox("Máquina Completa", lista_productos)
+        if os.path.exists(os.path.join(prod_path, seleccion)):
+            st.image(os.path.join(prod_path, seleccion), width=180)
         
-        if os.path.exists(os.path.join(path_prod, seleccion)):
-            st.image(os.path.join(path_prod, seleccion), width=150)
-        
-        st.number_input("Cantidad", min_value=0, value=1)
+        st.number_input("Cantidad", min_value=1, value=1)
         st.markdown('</div>', unsafe_allow_html=True)
-
-    with col_der:
-        st.markdown('<div class="info-card" style="text-align: center;">', unsafe_allow_html=True)
-        st.markdown("<p style='color: #cc0000; font-weight: bold;'>Descuento Aplicable</p>", unsafe_allow_html=True)
-        st.markdown("<h1 style='font-size: 80px; margin: 0;'>20%</h1>", unsafe_allow_html=True)
+        
+    with col2:
+        st.markdown('<div class="card" style="text-align: center;">', unsafe_allow_html=True)
+        st.markdown("<p style='color: #CC0000; font-family: WuerthBold;'>Descuento Aplicable</p>", unsafe_allow_html=True)
+        st.markdown("<h1 style='font-size: 100px; font-family: WuerthBold; color: #CC0000; margin: 10px 0;'>20%</h1>", unsafe_allow_html=True)
         
         if st.button("Calcular y Aplicar"):
-            st.balloons()
+            st.success("¡Descuento aplicado con éxito!")
         st.markdown('</div>', unsafe_allow_html=True)
+
+# 3. Logo Red Stripe (Decorativo en esquina)
+if red_stripe:
+    st.markdown(f'<img src="data:image/png;base64,{red_stripe}" class="footer-stripe">', unsafe_allow_html=True)
