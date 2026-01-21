@@ -2,6 +2,7 @@ import streamlit as st
 import base64
 import os
 import random
+from PIL import Image
 
 # --- SOPORTE DE ARCHIVOS ---
 def get_base64(file_path):
@@ -16,11 +17,13 @@ def get_random_bg():
     fondos = [f for f in os.listdir(current_bg_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
     return os.path.join(current_bg_dir, random.choice(fondos)) if fondos else None
 
-# --- INICIALIZACIÓN ---
-if 'bolsa_puntos' not in st.session_state: st.session_state.bolsa_puntos = 0
-if 'carrito' not in st.session_state: st.session_state.carrito = []
+# --- INICIALIZACIÓN DE ESTADOS ---
+if 'carrito' not in st.session_state:
+    st.session_state.carrito = []
+if 'bolsa_puntos' not in st.session_state:
+    st.session_state.bolsa_puntos = 0
 
-# --- CONFIGURACIÓN ---
+# --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="Würth Plan Recambio", layout="centered")
 
 fondo_path = get_random_bg()
@@ -28,13 +31,18 @@ logo_base64 = get_base64("logo_wurth.jpg")
 red_stripe_base64 = get_base64("logo_red_stripe.png")
 f_bold = get_base64("WuerthBold.ttf")
 
-# --- CSS PARA INTEGRAR LOS BLOQUES ---
+# --- CSS DEFINITIVO (ELIMINACIÓN DE ESPACIOS) ---
 st.markdown(f"""
     <style>
     @font-face {{ font-family: 'WuerthBold'; src: url('data:font/ttf;base64,{f_bold}'); }}
     
     header {{ visibility: hidden; }}
-    .main .block-container {{ padding-top: 0 !important; max-width: 950px; }}
+    .main .block-container {{
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        max-width: 950px;
+    }}
+    
     .stApp {{ background: none; }}
     
     .bg-layer {{
@@ -43,11 +51,18 @@ st.markdown(f"""
         background-size: cover; background-position: center; opacity: 0.12;
     }}
 
-    /* Estilo para que los inputs de cliente no parezcan bloques sueltos */
-    div[data-testid="stTextInput"] > label {{
-        font-family: 'WuerthBold' !important; color: #CC0000;
-    }}
+    /* ELIMINACIÓN DE ESPACIOS FANTASMA ENTRE ELEMENTOS */
+    [data-testid="stVerticalBlock"] {{ gap: 0rem !important; }}
     
+    .main-body {{
+        background-color: rgba(242, 242, 242, 0.98);
+        border-radius: 0 0 12px 12px;
+        box-shadow: 0px 20px 60px rgba(0,0,0,0.4);
+        padding: 20px;
+        margin-top: 0px;
+    }}
+
+    /* CABECERA */
     .header-container {{
         display: flex; background-color: white; height: 160px; border-radius: 12px 12px 0 0;
         overflow: hidden;
@@ -59,26 +74,41 @@ st.markdown(f"""
     }}
     .header-title h1 {{ 
         color: white !important; font-family: 'WuerthBold' !important; 
-        font-size: 44px !important; margin: 0 !important; text-align: center;
+        font-size: 44px !important; margin: 0 !important;
+        text-align: center; line-height: 1.1;
     }}
 
-    /* Estilo Menú */
-    .stTabs [data-baseweb="tab-list"] {{ gap: 10px; padding: 10px 20px; background: none; }}
+    /* MENÚ */
+    .stTabs [data-baseweb="tab-list"] {{ 
+        gap: 8px; padding: 0px 0px 10px 0px; 
+        background-color: transparent !important; 
+    }}
     .stTabs [data-baseweb="tab"] {{
-        font-family: 'WuerthBold' !important; font-size: 20px !important; 
-        height: 60px; color: #666; flex: 1; text-align: center;
-        background-color: #e8e8e8; border-radius: 12px 12px 0 0 !important;
+        font-family: 'WuerthBold' !important; font-size: 18px !important; 
+        height: 55px; color: #444; flex: 1; text-align: center;
+        background-color: #e8e8e8;
+        border-radius: 10px 10px 0 0 !important; 
+        border: none !important;
     }}
     .stTabs [aria-selected="true"] {{ 
-        color: #CC0000 !important; background-color: white !important;
+        color: #CC0000 !important; 
+        background-color: white !important;
+        border-bottom: none !important;
     }}
 
+    /* TARJETAS */
     .card {{ 
-        background-color: white; padding: 30px; border-radius: 15px; 
-        margin: 10px 20px 20px 20px; border: 1px solid #ddd;
+        background-color: white; padding: 25px; border-radius: 12px; 
+        margin-bottom: 15px; border: 1px solid #ddd;
     }}
     
-    .footer-logo {{ position: fixed; bottom: 20px; left: 20px; width: 280px; opacity: 0.9; }}
+    .big-num {{ 
+        color: #CC0000; font-family: 'WuerthBold'; 
+        font-size: 90px; text-align: center; 
+        line-height: 1; margin-bottom: 20px;
+    }}
+    
+    .footer-logo {{ position: fixed; bottom: 20px; left: 20px; width: 260px; opacity: 0.9; }}
     </style>
     <div class="bg-layer"></div>
     """, unsafe_allow_html=True)
@@ -91,48 +121,60 @@ st.markdown(f"""
     </div>
     """, unsafe_allow_html=True)
 
-# --- FICHA DE CLIENTE (Usando los bloques blancos) ---
-# Al poner estos inputs aquí, "ocupamos" el espacio que antes estaba vacío
-col_cliente, col_num = st.columns([2, 1])
-with col_cliente:
-    nombre = st.text_input("CLIENTE:", placeholder="Nombre o Razón Social", key="cli_nom")
-with col_num:
-    numero = st.text_input("N° CUENTA:", placeholder="000000", key="cli_num")
+# --- CUERPO DE LA APP ---
+# Usamos un solo bloque contenedor para evitar franjas blancas entre secciones
+with st.container():
+    st.markdown('<div class="main-body">', unsafe_allow_html=True)
+    
+    # FICHA DE CLIENTE: Ubicada DENTRO de los rectángulos que veías vacíos
+    st.markdown('<div class="card" style="padding: 15px; margin-top: 10px;">', unsafe_allow_html=True)
+    c_cli, c_num = st.columns([2, 1])
+    with c_cli:
+        nombre = st.text_input("Nombre del Cliente", placeholder="Escriba aquí...", key="client_name")
+    with c_num:
+        numero = st.text_input("N° de Cliente", placeholder="000000", key="client_id")
+    st.markdown('</div>', unsafe_allow_html=True)
 
-t1, t2, t3 = st.tabs(["📊 CALCULADORA", "🛠️ CATÁLOGO", "🛒 PEDIDO"])
+    t1, t2, t3 = st.tabs(["📊 CALCULADORA", "🛠️ CATÁLOGO", "🛒 PEDIDO"])
 
-with t1:
-    st.markdown("<h2 style='color:#CC0000; font-family:WuerthBold; text-align:center; padding-top:10px;'>Cálculo de entregas</h2>", unsafe_allow_html=True)
-    c1, c2 = st.columns([1.1, 0.9])
-    with c1:
+    with t1:
+        st.markdown("<h3 style='color:#CC0000; font-family:WuerthBold; padding:10px 0;'>Ingresar entregas</h3>", unsafe_allow_html=True)
+        col_inputs, col_visual = st.columns([1.1, 0.9])
+        
+        with col_inputs:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            qc = st.number_input("Máquina Completa (20%)", 0, 50, 0, key="in1")
+            qs = st.number_input("Máquina sin batería (10%)", 0, 50, 0, key="in2")
+            qb = st.number_input("Batería o Cargador (5%)", 0, 50, 0, key="in3")
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+        with col_visual:
+            st.markdown('<div class="card" style="text-align:center;">', unsafe_allow_html=True)
+            puntos = (qc * 20) + (qs * 10) + (qb * 5)
+            st.write("Bolsa Total Acumulada")
+            st.markdown(f'<div class="big-num">{puntos}%</div>', unsafe_allow_html=True)
+            if st.button("CONFIRMAR DESCUENTOS", use_container_width=True):
+                st.session_state.bolsa_puntos = puntos
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    with t2:
+        # Contenido del Catálogo
+        st.markdown("<h3 style='color:#CC0000; font-family:WuerthBold; padding:10px 0;'>Catálogo de Herramientas</h3>", unsafe_allow_html=True)
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        qc = st.number_input("Máquinas Completas (20%)", 0, 100, 0)
-        qs = st.number_input("Máquinas sin batería (10%)", 0, 100, 0)
-        qb = st.number_input("Solo Batería/Cargador (5%)", 0, 100, 0)
-        st.markdown('</div>', unsafe_allow_html=True)
-    with c2:
-        st.markdown('<div class="card" style="text-align:center;">', unsafe_allow_html=True)
-        val = (qc * 20) + (qs * 10) + (qb * 5)
-        st.write("**Bolsa Acumulada**")
-        st.markdown(f"<h1 style='color:#CC0000; font-family:WuerthBold; font-size:80px;'>{val}%</h1>", unsafe_allow_html=True)
-        if st.button("CARGAR BOLSA", use_container_width=True):
-            st.session_state.bolsa_puntos = val
-            st.rerun()
+        st.write(f"Vincular compra para: **{nombre if nombre else 'Cliente nuevo'}**")
+        # Aquí iría el selector de imágenes de productos
         st.markdown('</div>', unsafe_allow_html=True)
 
-with t2:
-    st.markdown(f"<h2 style='color:#CC0000; font-family:WuerthBold; text-align:center; padding-top:10px;'>Catálogo para: {nombre if nombre else '...'}</h2>", unsafe_allow_html=True)
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    # Lógica de catálogo aquí...
-    st.write("Seleccione productos para aplicar el descuento acumulado.")
+    with t3:
+        # Contenido del Pedido
+        st.markdown("<h3 style='color:#CC0000; font-family:WuerthBold; padding:10px 0;'>Resumen del Pedido</h3>", unsafe_allow_html=True)
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.write(f"Cliente: {nombre} ({numero})")
+        st.markdown('</div>', unsafe_allow_html=True)
+
     st.markdown('</div>', unsafe_allow_html=True)
 
-with t3:
-    st.markdown(f"<h2 style='color:#CC0000; font-family:WuerthBold; text-align:center; padding-top:10px;'>Resumen de Pedido</h2>", unsafe_allow_html=True)
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.write(f"**Cliente:** {nombre} | **Cuenta:** {numero}")
-    # Tabla de pedido aquí...
-    st.markdown('</div>', unsafe_allow_html=True)
-
+# LOGO RED STRIPE (Izquierda abajo, doble tamaño)
 if red_stripe_base64:
     st.markdown(f'<img src="data:image/png;base64,{red_stripe_base64}" class="footer-logo">', unsafe_allow_html=True)
