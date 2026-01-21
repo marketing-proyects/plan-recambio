@@ -35,23 +35,18 @@ logo_base64 = get_base64("logo_wurth.jpg")
 red_stripe_base64 = get_base64("logo_red_stripe.png")
 f_bold = get_base64("WuerthBold.ttf")
 
-# --- CSS ACTUALIZADO (INTEGRACIÓN DE DATOS DEL CLIENTE) ---
+# --- CSS PARA CONVERTIR BLOQUES EN LÍNEAS FINAS ---
 st.markdown(f"""
     <style>
     @font-face {{ font-family: 'WuerthBold'; src: url('data:font/ttf;base64,{f_bold}'); }}
     
     header {{ visibility: hidden; }}
-    
     .main .block-container {{
         padding-top: 0 !important;
         padding-bottom: 0 !important;
         max-width: 950px;
     }}
-
-    /* ELIMINACIÓN DE FRANJAS FANTASMA */
-    [data-testid="stVerticalBlock"] > div:empty {{ display: none !important; }}
-    .st-emotion-cache-1kyx60e {{ display: none !important; }} 
-
+    
     .stApp {{ background: none; }}
     
     .bg-layer {{
@@ -59,6 +54,32 @@ st.markdown(f"""
         z-index: -1; background-image: url("data:image/png;base64,{get_base64(fondo_path)}");
         background-size: cover; background-position: center; opacity: 0.12;
     }}
+
+    /* ELIMINACIÓN DE FONDO DE INPUTS Y CONVERSIÓN A LÍNEA FINA */
+    div[data-testid="stTextInput"] {{
+        background-color: transparent !important;
+    }}
+    
+    div[data-testid="stTextInput"] input {{
+        background-color: transparent !important;
+        border: none !important;
+        border-bottom: 2px solid #CC0000 !important; /* Línea roja fina */
+        border-radius: 0px !important;
+        padding: 5px 0px !important;
+        font-family: 'WuerthBold' !important;
+        font-size: 18px !important;
+        color: #333 !important;
+    }}
+
+    div[data-testid="stTextInput"] label {{
+        font-family: 'WuerthBold' !important;
+        color: #CC0000 !important;
+        font-size: 14px !important;
+    }}
+
+    /* ELIMINAR BLOQUES BLANCOS RESIDUALES */
+    [data-testid="stVerticalBlock"] > div:empty {{ display: none !important; }}
+    .st-emotion-cache-1kyx60e {{ display: none !important; }} 
 
     .main-body {{
         background-color: transparent;
@@ -68,7 +89,7 @@ st.markdown(f"""
     /* CABECERA */
     .header-container {{
         display: flex; background-color: white; height: 160px; border-radius: 12px 12px 0 0;
-        overflow: hidden;
+        overflow: hidden; margin-bottom: 10px;
     }}
     .header-logo {{ width: 220px; display: flex; align-items: center; justify-content: center; }}
     .header-title {{
@@ -91,7 +112,9 @@ st.markdown(f"""
         height: 60px; color: #666; flex: 1; text-align: center;
         background-color: #e8e8e8;
         border-radius: 12px 12px 0 0 !important; 
+        border: none !important;
     }}
+    
     .stTabs [aria-selected="true"] {{ 
         color: #CC0000 !important; 
         background-color: #f5f5f5 !important;
@@ -100,8 +123,8 @@ st.markdown(f"""
 
     /* TARJETAS */
     .card {{ 
-        background-color: white; padding: 25px; border-radius: 15px; 
-        margin: 10px 20px; border: 1px solid #ddd;
+        background-color: white; padding: 30px; border-radius: 15px; 
+        margin: 10px 20px 20px 20px; border: 1px solid #ddd;
         box-shadow: 0px 10px 30px rgba(0,0,0,0.1);
     }}
     
@@ -127,80 +150,81 @@ st.markdown(f"""
     </div>
     """, unsafe_allow_html=True)
 
-with st.container():
-    st.markdown('<div class="main-body">', unsafe_allow_html=True)
-    
-    # --- BLOQUES DE DATOS DEL CLIENTE (TRANSFORMADOS) ---
-    col_cli_nom, col_cli_num = st.columns([1.5, 1])
-    with col_cli_nom:
-        st.session_state.nombre_cliente = st.text_input("Nombre del Cliente:", value=st.session_state.nombre_cliente, placeholder="Ej: Juan Pérez")
-    with col_cli_num:
-        st.session_state.numero_cliente = st.text_input("N° de Cliente:", value=st.session_state.numero_cliente, placeholder="Ej: 123456")
+st.markdown('<div class="main-body">', unsafe_allow_html=True)
 
-    t1, t2, t3 = st.tabs(["📊 CALCULADORA", "🛠️ CATÁLOGO", "🛒 PEDIDO"])
+# --- FICHA DE CLIENTE (TRANSFORMADA EN LÍNEAS) ---
+c_nom, c_num = st.columns([1.5, 1])
+with c_nom:
+    st.session_state.nombre_cliente = st.text_input("NOMBRE DEL CLIENTE", value=st.session_state.nombre_cliente, key="in_nom")
+with c_num:
+    st.session_state.numero_cliente = st.text_input("N° CLIENTE", value=st.session_state.numero_cliente, key="in_num")
 
-    with t1:
-        st.markdown("<h2 style='color:#CC0000; font-family:WuerthBold; text-align:center; padding:10px 0;'>Ingresar entregas del cliente</h2>", unsafe_allow_html=True)
-        c1, c2 = st.columns([1.1, 0.9])
-        with c1:
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            qc = st.number_input("Máquinas Completas (20% c/u)", 0, 100, 0, key="n1")
-            qs = st.number_input("Máquinas sin batería (10% c/u)", 0, 100, 0, key="n2")
-            qb = st.number_input("Solo Batería o Cargador (5% c/u)", 0, 100, 0, key="n3")
-            st.markdown('</div>', unsafe_allow_html=True)
-        with c2:
-            st.markdown('<div class="card" style="text-align:center;">', unsafe_allow_html=True)
-            val = (qc * 20) + (qs * 10) + (qb * 5)
-            st.write("**Bolsa Disponible**")
-            st.markdown(f'<div class="big-num">{val}%</div>', unsafe_allow_html=True)
-            if st.button("SUMATORIA DE DESCUENTOS", use_container_width=True):
-                st.session_state.bolsa_puntos = val
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+t1, t2, t3 = st.tabs(["📊 CALCULADORA", "🛠️ CATÁLOGO", "🛒 PEDIDO"])
 
-    with t2:
-        st.markdown("<h2 style='color:#CC0000; font-family:WuerthBold; text-align:center; padding:10px 0;'>Seleccionar Máquina Nueva</h2>", unsafe_allow_html=True)
+with t1:
+    st.markdown("<h2 style='color:#CC0000; font-family:WuerthBold; text-align:center; padding:15px 0;'>Ingresar entregas del cliente</h2>", unsafe_allow_html=True)
+    c1, c2 = st.columns([1.1, 0.9])
+    with c1:
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        p = "assets/productos"
-        if os.path.exists(p):
-            prods = sorted([f for f in os.listdir(p) if f.lower().endswith('.png')])
-            if prods:
-                sel = st.selectbox("Catálogo de productos:", prods)
-                col_img, col_sel = st.columns(2)
-                with col_img:
-                    st.image(os.path.join(p, sel), width=300)
-                with col_sel:
-                    disp = st.session_state.bolsa_puntos
-                    st.write(f"**Puntos disponibles:** {disp}%")
-                    dto = st.slider("Asignar descuento (%)", 0, 30, value=min(disp, 30))
-                    if st.button("AÑADIR AL PEDIDO", use_container_width=True):
-                        if disp >= dto:
-                            st.session_state.carrito.append({"prod": sel, "dto": dto})
-                            st.session_state.bolsa_puntos -= dto
-                            st.rerun()
+        qc = st.number_input("Máquinas Completas (20% c/u)", 0, 100, 0, key="n1")
+        qs = st.number_input("Máquinas sin batería (10% c/u)", 0, 100, 0, key="n2")
+        qb = st.number_input("Solo Batería o Cargador (5% c/u)", 0, 100, 0, key="n3")
+        st.markdown('</div>', unsafe_allow_html=True)
+    with c2:
+        st.markdown('<div class="card" style="text-align:center;">', unsafe_allow_html=True)
+        val = (qc * 20) + (qs * 10) + (qb * 5)
+        st.write("**Bolsa Disponible**")
+        st.markdown(f'<div class="big-num">{val}%</div>', unsafe_allow_html=True)
+        if st.button("SUMATORIA DE DESCUENTOS", use_container_width=True):
+            st.session_state.bolsa_puntos = val
+            st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-    with t3:
-        st.markdown(f"<h2 style='color:#CC0000; font-family:WuerthBold; text-align:center; padding:10px 0;'>Pedido: {st.session_state.nombre_cliente}</h2>", unsafe_allow_html=True)
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        if st.session_state.numero_cliente:
-            st.write(f"**Cliente N°:** {st.session_state.numero_cliente}")
-        
-        if st.session_state.carrito:
-            for i, item in enumerate(st.session_state.carrito):
-                ca, cb, cc = st.columns([3, 1, 1])
-                ca.write(f"**{i+1}.** {item['prod']}")
-                cb.write(f"**-{item['dto']}%**")
-                if cc.button("Quitar", key=f"del_{i}"):
-                    st.session_state.bolsa_puntos += item['dto']
-                    st.session_state.carrito.pop(i)
-                    st.rerun()
-            st.write("---")
-            st.write(f"**Bolsa residual:** {st.session_state.bolsa_puntos}%")
-        else:
-            st.info("El pedido está vacío.")
-        st.markdown('</div>', unsafe_allow_html=True)
+with t2:
+    st.markdown("<h2 style='color:#CC0000; font-family:WuerthBold; text-align:center; padding:15px 0;'>Seleccionar Máquina Nueva</h2>", unsafe_allow_html=True)
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    p = "assets/productos"
+    if os.path.exists(p):
+        prods = sorted([f for f in os.listdir(p) if f.lower().endswith('.png')])
+        if prods:
+            sel = st.selectbox("Catálogo de productos:", prods)
+            col_img, col_sel = st.columns(2)
+            with col_img:
+                img_path = os.path.join(p, sel)
+                try:
+                    st.image(img_path, width=300)
+                except:
+                    st.warning("Error al cargar imagen.")
+            with col_sel:
+                disp = st.session_state.bolsa_puntos
+                st.write(f"**Puntos disponibles:** {disp}%")
+                dto = st.slider("Asignar descuento (%)", 0, 30, value=min(disp, 30))
+                if st.button("AÑADIR AL PEDIDO", use_container_width=True):
+                    if disp >= dto:
+                        st.session_state.carrito.append({"prod": sel, "dto": dto})
+                        st.session_state.bolsa_puntos -= dto
+                        st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
+
+with t3:
+    st.markdown(f"<h2 style='color:#CC0000; font-family:WuerthBold; text-align:center; padding:15px 0;'>Pedido: {st.session_state.nombre_cliente}</h2>", unsafe_allow_html=True)
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    if st.session_state.carrito:
+        for i, item in enumerate(st.session_state.carrito):
+            ca, cb, cc = st.columns([3, 1, 1])
+            ca.write(f"**{i+1}.** {item['prod']}")
+            cb.write(f"**-{item['dto']}%**")
+            if cc.button("Quitar", key=f"del_{i}"):
+                st.session_state.bolsa_puntos += item['dto']
+                st.session_state.carrito.pop(i)
+                st.rerun()
+        st.write("---")
+        st.write(f"**Bolsa residual:** {st.session_state.bolsa_puntos}%")
+    else:
+        st.info("El pedido está vacío.")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
 
 if red_stripe_base64:
     st.markdown(f'<img src="data:image/png;base64,{red_stripe_base64}" class="footer-logo">', unsafe_allow_html=True)
