@@ -1,70 +1,40 @@
 import streamlit as st
-import base64
-import random
 import os
-
-# --- CONFIGURACIÓN ---
-st.set_page_config(page_title="Plan Recambio | Würth", layout="wide")
-
-# Función para inyectar CSS y fuentes (manteniendo lo anterior)
-def local_css():
-    st.markdown("""
-        <style>
-        /* Estilos de Würth */
-        .main { background-color: #F2F2F2; }
-        .wuerth-card {
-            background-color: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        h1 { color: #CC0000; font-weight: bold; }
-        .stButton>button {
-            background-color: #CC0000;
-            color: white;
-            width: 100%;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-local_css()
+import random
 
 # --- LÓGICA DE IMAGEN ALEATORIA ---
-# Aquí pondrás la lista de nombres de archivos que me pases
-# Por ahora uso placeholders para que veas cómo funciona
-lista_maquinas = ["maquina1.png", "maquina2.png", "maquina3.png"] 
-imagen_aleatoria = random.choice(lista_maquinas)
+path_productos = "assets/productos/"
 
-# --- HEADER CON LOGO ---
-col_logo, col_titulo = st.columns([1, 4])
-with col_logo:
-    # Cuando cargues el logo, reemplaza 'logo_wuerth.png'
-    # st.image("logo_wuerth.png", width=150)
-    st.markdown("### LOGO WÜRTH") # Placeholder temporal
+# Verificamos si la carpeta existe y tiene imágenes
+if os.path.exists(path_productos):
+    lista_imagenes = [f for f in os.listdir(path_productos) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+else:
+    lista_imagenes = []
 
-with col_titulo:
-    st.title("PLAN RECAMBIO")
-
-# --- CUERPO DE LA APP (FASE 1) ---
-tabs = st.tabs(["📊 Calculadora", "🛠️ Catálogo", "📝 Resumen"])
-
-with tabs[0]:
-    col_input, col_visual = st.columns([1, 1])
+# Selección aleatoria
+if lista_imagenes:
+    # Usamos session_state para que la imagen solo cambie al recargar la página 
+    # o al realizar una acción específica, evitando que parpadee en cada clic.
+    if 'imagen_actual' not in st.session_state:
+        st.session_state.imagen_actual = random.choice(lista_imagenes)
     
-    with col_input:
-        st.markdown("### Detalle de Entrega")
-        tipo = st.selectbox("¿Qué entrega el cliente?", 
-                            ["Máquina Completa", "Máquina Parcial", "Batería/Cargador"])
-        cant = st.number_input("Cantidad", min_value=1)
-        st.button("Calcular Descuento")
+    imagen_mostrar = os.path.join(path_productos, st.session_state.imagen_actual)
+else:
+    imagen_mostrar = None # O una imagen por defecto
 
-    with col_visual:
-        st.markdown('<div class="wuerth-card">', unsafe_allow_html=True)
-        # Aquí es donde la imagen cambia con cada refresh
-        st.write("### Modelo Sugerido")
-        # st.image(f"assets/{imagen_aleatoria}", use_column_width=True)
-        st.info(f"Aquí aparecería: {imagen_aleatoria}") 
-        
-        st.metric("Beneficio", "20%", delta="Plan Recambio")
-        st.markdown('</div>', unsafe_allow_html=True)
+# --- DENTRO DE LA FASE 1 (Visualización) ---
+with col_visual:
+    st.markdown('<div class="wuerth-card">', unsafe_allow_html=True)
+    
+    if imagen_mostrar:
+        st.image(imagen_mostrar, use_container_width=True)
+        # Extraemos el nombre del archivo para mostrarlo como título (quitando extensión)
+        nombre_prod = st.session_state.imagen_actual.split('.')[0].replace('_', ' ').upper()
+        st.markdown(f"**MODELO: {nombre_prod}**")
+    
+    st.metric("Beneficio", f"{st.session_state.descuento_global}%", delta="Plan Recambio")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    if st.button("🔄 Ver otro modelo"):
+        st.session_state.imagen_actual = random.choice(lista_imagenes)
+        st.rerun()
