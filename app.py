@@ -1,150 +1,60 @@
 import streamlit as st
-import base64
+from PIL import Image
 import os
-import random
 
-# --- 1. CONFIGURACIÓN Y CARGA DE ACTIVOS ---
-st.set_page_config(page_title="Plan Recambio | Würth", layout="wide")
+# Configuración de página
+st.set_page_config(page_title="Würth - Plan Recambio", layout="centered")
 
-def get_base64(path):
-    if os.path.exists(path):
-        with open(path, "rb") as f:
-            return base64.b64encode(f.read()).decode()
-    return ""
-
-# Carga de archivos (Asegúrate que los nombres coincidan exactamente)
-f_bold = get_base64("WuerthBold.ttf")
-f_extra = get_base64("WuerthExtraBoldCond.ttf")
-logo_w = get_base64("logo_wurth.jpg")
-logo_rs = get_base64("logo_red_stripe.png")
-
-# Lógica de imágenes
-path_fondos = "assets2/"
-path_prod = "assets/productos/"
-fondos = [f for f in os.listdir(path_fondos) if f.lower().endswith(('.jpg', '.jpeg', '.png'))] if os.path.exists(path_fondos) else []
-productos = sorted([f for f in os.listdir(path_prod) if f.lower().endswith('.png')]) if os.path.exists(path_prod) else []
-
-if 'idx' not in st.session_state: st.session_state.idx = 0
-if 'bg' not in st.session_state and fondos: st.session_state.bg = random.choice(fondos)
-
-# --- 2. INYECCIÓN DE CSS (ELIMINACIÓN DE ESTÉTICA "DASHBOARD") ---
-bg_data = get_base64(os.path.join(path_fondos, st.session_state.bg)) if fondos else ""
-
+# Aplicar fuentes y estilos personalizados mediante CSS
 st.markdown(f"""
     <style>
-    @font-face {{ font-family: 'WuerthBold'; src: url(data:font/ttf;base64,{f_bold}); }}
-    @font-face {{ font-family: 'WuerthExtra'; src: url(data:font/ttf;base64,{f_extra}); }}
-
-    /* Fondo de pantalla completa con lavado sutil */
-    .stApp {{
-        background: linear-gradient(rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.25)), 
-                    url(data:image/jpeg;base64,{bg_data}) no-repeat center center fixed;
-        background-size: cover;
-    }}
-
-    /* Contenedor central de la herramienta - SIN CUADROS */
-    .product-showcase {{
-        position: relative;
-        max-width: 600px;
-        margin: 0 auto;
-        text-align: center;
-        background: transparent !important;
-    }}
-
-    /* GLOBO REDONDO: Estilo Sticker de alta visibilidad */
-    .discount-sticker {{
-        position: absolute;
-        top: 20px;
-        right: -30px;
-        background-color: #CC0000;
-        color: white;
-        width: 170px;
-        height: 170px;
-        border-radius: 50%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        font-family: 'WuerthExtra';
-        border: 5px solid white;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-        z-index: 100;
-        transform: rotate(10deg);
-    }}
-
-    .tool-name {{
+    @font-face {{
         font-family: 'WuerthBold';
-        font-size: 2rem;
-        color: white;
-        background: #121212;
-        padding: 12px 30px;
-        display: inline-block;
-        margin-top: -20px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
+        src: url('WuerthBold.ttf');
     }}
-
-    /* Botones minimalistas */
+    .main {{
+        background-color: #f5f5f5;
+    }}
     .stButton>button {{
-        background-color: #121212;
+        background-color: #cc0000;
         color: white;
-        border: none;
-        border-radius: 0;
-        font-family: 'WuerthBold';
-        padding: 15px;
         width: 100%;
-        text-transform: uppercase;
+        border-radius: 5px;
     }}
-    .stButton>button:hover {{ background-color: #CC0000; }}
     </style>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
-# --- 3. CABECERA ---
-st.markdown(f'''
-    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 60px;">
-        <img src="data:image/png;base64,{logo_rs}" width="300">
-        <img src="data:image/jpg;base64,{logo_w}" width="150">
-    </div>
-''', unsafe_allow_html=True)
+# Encabezado con Logo y Título
+col1, col2 = st.columns([1, 3])
+with col1:
+    st.image("logo_wurth.jpg", width=100)
+with col2:
+    st.markdown("<h1 style='color: white; background-color: #cc0000; padding: 20px; text-align: center;'>PLAN RECAMBIO</h1>", unsafe_allow_html=True)
 
-st.markdown("<h1 style='text-align:center; font-family:WuerthExtra; color:#CC0000; font-size:4.5rem; margin:0;'>PLAN RECAMBIO</h1>", unsafe_allow_html=True)
+# Navegación por pestañas (Tabs)
+tab1, tab2, tab3 = st.tabs(["1. Calculadora", "2. Catálogo", "3. Consolidación"])
 
-# --- 4. ÁREA VISUAL CENTRAL ---
-if productos:
-    img_actual = productos[st.session_state.idx]
+with tab1:
+    st.subheader("Cálculo de Beneficio")
     
-    st.markdown('<div class="product-showcase">', unsafe_allow_html=True)
+    col_left, col_right = st.columns(2)
     
-    # El Globo de Descuento (Sticker)
-    st.markdown(f'''
-        <div class="discount-sticker">
-            <span style="font-size:75px; line-height:1;">25%</span>
-            <span style="font-size:24px;">OFF</span>
-        </div>
-    ''', unsafe_allow_html=True)
-    
-    # Imagen de la herramienta (tamaño controlado para evitar scrolls)
-    st.image(os.path.join(path_prod, img_actual), width=500)
-    
-    # Nombre
-    nombre = img_actual.split('.')[0].replace('_', ' ').upper()
-    st.markdown(f'<div class="tool-name">{nombre}</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    with col_left:
+        st.write("Complete lo que el cliente entrega:")
+        
+        # Selector de productos (usando los archivos de tu carpeta assets/productos)
+        productos = [f for f in os.listdir("assets/productos") if f.endswith('.png')]
+        seleccion = st.selectbox("Máquina Completa", productos)
+        
+        # Mostrar imagen del producto seleccionado
+        img_path = os.path.join("assets/productos", seleccion)
+        st.image(img_path, width=150)
+        
+        cantidad = st.number_input("Cantidad", min_value=0, value=1)
 
-    # Navegación compacta debajo
-    st.write("<br>", unsafe_allow_html=True)
-    c1, c2 = st.columns(2)
-    with c1:
-        if st.button("⬅️ ANTERIOR"):
-            st.session_state.idx = (st.session_state.idx - 1) % len(productos)
-            st.rerun()
-    with c2:
-        if st.button("SIGUIENTE ➡️"):
-            st.session_state.idx = (st.session_state.idx + 1) % len(productos)
-            st.rerun()
-
-# --- 5. CALCULADORA (Limpia) ---
-st.divider()
-st.subheader("CÁLCULO DE BENEFICIO")
-entrega = st.selectbox("Seleccione el equipo que entrega el cliente:", ["Máquina Completa", "Máquina Parcial", "Batería / Cargador"])
-st.button("CONFIRMAR Y CALCULAR PRECIO")
+    with col_right:
+        st.markdown("<p style='color: #cc0000; font-weight: bold;'>Descuento Aplicable</p>", unsafe_allow_html=True)
+        st.markdown("<h2 style='font-size: 60px;'>20%</h2>", unsafe_allow_html=True)
+        
+        if st.button("Calcular y Aplicar"):
+            st.success(f"Aplicado para {cantidad} unidad(es)")
