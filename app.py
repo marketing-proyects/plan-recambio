@@ -25,43 +25,41 @@ logo_base64 = get_base64("logo_wurth.jpg")
 red_stripe_base64 = get_base64("logo_red_stripe.png")
 font_bold = get_base64("WuerthBold.ttf")
 
-# --- CSS REFINADO ---
+# --- CSS ACTUALIZADO ---
 st.markdown(f"""
     <style>
     @font-face {{ font-family: 'WuerthBold'; src: url('data:font/ttf;base64,{font_bold}'); }}
     
     .stApp {{ background: none; }}
-    
     .bg-layer {{
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
         z-index: -1; 
         background-image: url("data:image/png;base64,{get_base64(fondo_path)}");
-        background-size: cover; background-position: center; 
-        opacity: 0.10; /* Fondo casi imperceptible */
+        background-size: cover; background-position: center; opacity: 0.12;
     }}
 
     [data-testid="block-container"] {{
-        background-color: rgba(242, 242, 242, 0.9); /* Fondo gris claro con bloque sólido */
+        background-color: rgba(242, 242, 242, 0.95);
         padding: 0 !important; border-radius: 12px;
         box-shadow: 0px 15px 50px rgba(0,0,0,0.3); max-width: 950px; margin-top: 30px;
     }}
 
-    /* Cabecera con Título Centrado */
     .header-container {{
         display: flex; background-color: white; height: 160px; border-radius: 12px 12px 0 0;
     }}
     .header-logo {{ flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }}
     .header-title {{
-        flex: 2.5; background-color: #CC0000; display: flex; align-items: center; 
-        justify-content: center; /* TÍTULO CENTRADO */
+        flex: 2.5; background-color: #CC0000; 
+        display: flex; align-items: center; /* CENTRADO EN ALTURA */
+        justify-content: center; 
     }}
-    .header-title h1 {{ color: white !important; font-family: 'WuerthBold'; font-size: 55px !important; margin: 0; text-align: center; }}
+    .header-title h1 {{ 
+        color: white !important; font-family: 'WuerthBold'; font-size: 55px !important; 
+        margin: 0; line-height: 160px; /* Asegura el centrado vertical del texto */
+    }}
 
-    /* Estilo de Tabs (Menú) */
-    .stTabs [data-baseweb="tab-list"] {{ gap: 10px; }}
     .stTabs [data-baseweb="tab"] {{
-        font-family: 'WuerthBold' !important; font-size: 20px !important;
-        height: 60px; color: #333;
+        font-family: 'WuerthBold' !important; font-size: 22px !important; height: 70px;
     }}
 
     .info-block {{
@@ -69,11 +67,11 @@ st.markdown(f"""
         box-shadow: 0px 5px 15px rgba(0,0,0,0.05); margin-bottom: 20px;
     }}
     
-    .discount-big {{
-        color: #CC0000; font-family: 'WuerthBold'; font-size: 110px; text-align: center; margin: 0;
+    .total-pool {{
+        color: #CC0000; font-family: 'WuerthBold'; font-size: 80px; text-align: center; margin: 0;
     }}
     
-    .footer-logo {{ position: fixed; bottom: 20px; right: 20px; width: 150px; opacity: 0.8; }}
+    .footer-logo {{ position: fixed; bottom: 20px; right: 20px; width: 140px; }}
     </style>
     <div class="bg-layer"></div>
     """, unsafe_allow_html=True)
@@ -86,59 +84,66 @@ st.markdown(f"""
     </div>
     """, unsafe_allow_html=True)
 
-# Pestañas con nombres actualizados
 tabs = st.tabs(["📊 1. Calculadora", "🛠️ 2. Catálogo", "📝 3. Pedido"])
 
-# --- TAB 1: CALCULADORA ---
+# --- TAB 1: CALCULADORA (MULTIPLE ENTREGA) ---
 with tabs[0]:
-    st.markdown("<h3 style='color: #CC0000; font-family: WuerthBold; padding: 20px 0 10px 0;'>Ingresar lo que entrega el cliente</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #CC0000; font-family: WuerthBold; padding: 20px 0;'>Ingresar entregas del cliente</h3>", unsafe_allow_html=True)
     
-    c_input, c_result = st.columns([1.2, 0.8])
+    col_in, col_pool = st.columns([1.2, 0.8])
     
-    with c_input:
+    with col_in:
         st.markdown('<div class="info-block">', unsafe_allow_html=True)
-        # Menú desplegable para opciones de entrega
-        opcion_entrega = st.selectbox(
-            "Seleccione tipo de entrega:",
-            ["Máquina Completa (20%)", "Máquina sin batería (10%)", "Solo Batería o Cargador (5%)"]
-        )
-        cantidad = st.number_input("Cantidad entregada:", min_value=0, step=1, value=1)
+        q_c = st.number_input("Máquinas Completas (20% c/u)", min_value=0, step=1)
+        q_s = st.number_input("Máquinas sin batería (10% c/u)", min_value=0, step=1)
+        q_b = st.number_input("Solo Batería o Cargador (5% c/u)", min_value=0, step=1)
         
-        # Mapeo de valores para el cálculo
-        val_map = {"Máquina Completa (20%)": 20, "Máquina sin batería (10%)": 10, "Solo Batería o Cargador (5%)": 5}
-        puntos_base = val_map[opcion_entrega] * cantidad
-        
-        st.info(f"Has seleccionado {cantidad} unidad(es) de: {opcion_entrega}")
+        total_puntos = (q_c * 20) + (q_s * 10) + (q_b * 5)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    with c_result:
+    with col_pool:
         st.markdown('<div class="info-block" style="text-align:center;">', unsafe_allow_html=True)
-        st.write("**Descuento Calculado**")
-        
-        # Lógica de tope de descuento
-        if cantidad >= 3:
-            dto_final = min(puntos_base, 30)
-        elif cantidad > 0:
-            dto_final = min(puntos_base, 20)
-        else:
-            dto_final = 0
-            
-        st.markdown(f'<div class="discount-big">{dto_final}%</div>', unsafe_allow_html=True)
-        if st.button("Guardar para el Pedido", use_container_width=True):
-            st.session_state['dto_final'] = dto_final
-            st.balloons()
+        st.write("**Bolsa de Descuento Acumulada**")
+        st.markdown(f'<div class="total-pool">{total_puntos}%</div>', unsafe_allow_html=True)
+        st.write("Este porcentaje se puede repartir en el pedido.")
+        if st.button("Confirmar Bolsa de Puntos", use_container_width=True):
+            st.session_state['bolsa_puntos'] = total_puntos
+            st.success("Puntos cargados correctamente.")
         st.markdown('</div>', unsafe_allow_html=True)
 
 # --- TAB 2: CATÁLOGO ---
 with tabs[1]:
-    st.markdown("<h3 style='color: #CC0000; font-family: WuerthBold; padding-top:20px;'>Catálogo de Herramientas</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #CC0000; font-family: WuerthBold; padding-top:20px;'>Explorar Catálogo</h3>", unsafe_allow_html=True)
     st.markdown('<div class="info-block">', unsafe_allow_html=True)
-    # Lógica de catálogo similar a la anterior pero con diseño limpio
     prod_path = "assets/productos"
     if os.path.exists(prod_path):
-        productos = [f for f in os.listdir(prod_path) if f.endswith('.png')]
-        sel = st.selectbox("Seleccione herramienta del catálogo:", productos)
-        st.image(os.path.join(prod_path, sel), width=300)
+        lista = [f for f in os.listdir(prod_path) if f.endswith('.png')]
+        sel_prod = st.selectbox("Ver producto:", lista)
+        st.image(os.path.join(prod_path, sel_prod), width=350)
+        st.write(f"**Referencia:** {sel_prod}")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# --- TAB 3: PEDIDO (REPARTO DE LOGICA) ---
+with tabs[2]:
+    st.markdown("<h3 style='color: #CC0000; font-family: WuerthBold; padding-top:20px;'>Configuración del Pedido</h3>", unsafe_allow_html=True)
+    
+    puntos_disponibles = st.session_state.get('bolsa_puntos', 0)
+    
+    st.markdown(f'<div class="info-block">', unsafe_allow_html=True)
+    st.markdown(f"#### Puntos disponibles para repartir: <span style='color:red'>{puntos_disponibles}%</span>", unsafe_allow_html=True)
+    
+    # Ejemplo de reparto para la primera máquina del pedido
+    st.write("---")
+    st.write("**Máquina 1 del pedido:**")
+    reparto = st.slider("Asignar descuento a esta unidad (%)", 0, 30, value=min(puntos_disponibles, 30))
+    
+    if st.button("Añadir al pedido y descontar de la bolsa"):
+        if puntos_disponibles >= reparto:
+            st.session_state['bolsa_puntos'] -= reparto
+            st.success(f"Aplicado {reparto}% a la unidad. Quedan {st.session_state['bolsa_puntos']}% disponibles.")
+            st.rerun()
+        else:
+            st.error("No tienes suficientes puntos en la bolsa.")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # Footer
