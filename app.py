@@ -13,7 +13,6 @@ def get_base64(file_path):
 
 def get_random_bg():
     bg_dir = "assets2/fondos"
-    # Fallback al directorio actual si no existe la carpeta específica
     current_bg_dir = bg_dir if os.path.exists(bg_dir) else "."
     fondos = [f for f in os.listdir(current_bg_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
     return os.path.join(current_bg_dir, random.choice(fondos)) if fondos else None
@@ -32,7 +31,7 @@ logo_base64 = get_base64("logo_wurth.jpg")
 red_stripe_base64 = get_base64("logo_red_stripe.png")
 f_bold = get_base64("WuerthBold.ttf")
 
-# --- CSS DEFINITIVO ---
+# --- CSS DEFINITIVO (LIMPIEZA DE BARRAS Y RECTÁNGULOS) ---
 st.markdown(f"""
     <style>
     @font-face {{ font-family: 'WuerthBold'; src: url('data:font/ttf;base64,{f_bold}'); }}
@@ -52,17 +51,20 @@ st.markdown(f"""
         background-size: cover; background-position: center; opacity: 0.12;
     }}
 
+    /* ELIMINAR BLOQUES BLANCOS FANTASMA */
+    [data-testid="stVerticalBlock"] > div:empty {{ display: none !important; }}
+    [data-testid="stHorizontalBlock"] {{ background: none !important; }}
+    div.st-emotion-cache-1kyx60e {{ display: none !important; }} /* Referencia a bloques vacíos */
+
     .main-body {{
-        background-color: rgba(242, 242, 242, 0.98);
-        border-radius: 0 0 12px 12px;
-        box-shadow: 0px 20px 60px rgba(0,0,0,0.4);
+        background-color: transparent; /* Fondo transparente para que se vea el fondo atrás entre bloques */
         padding-bottom: 40px;
     }}
 
-    /* CABECERA: Título centrado y corregido */
+    /* CABECERA: Título centrado */
     .header-container {{
         display: flex; background-color: white; height: 160px; border-radius: 12px 12px 0 0;
-        overflow: hidden;
+        overflow: hidden; margin-bottom: 0px;
     }}
     .header-logo {{ width: 220px; display: flex; align-items: center; justify-content: center; }}
     .header-title {{
@@ -71,32 +73,40 @@ st.markdown(f"""
     }}
     .header-title h1 {{ 
         color: white !important; font-family: 'WuerthBold' !important; 
-        font-size: 48px !important; /* Ajustado para evitar desconfiguración */
-        margin: 0 !important; padding: 0 !important;
-        text-align: center; line-height: 1.2;
-        letter-spacing: 1px;
+        font-size: 44px !important; margin: 0 !important;
+        text-align: center; line-height: 1.1;
     }}
 
-    /* MENÚ INSTITUCIONAL */
+    /* MENÚ INSTITUCIONAL REDONDEADO */
+    .stTabs {{ background: transparent !important; }}
     .stTabs [data-baseweb="tab-list"] {{ 
-        gap: 0; padding: 0; background-color: #e0e0e0; width: 100%;
+        gap: 15px; padding: 10px 20px; 
+        background-color: transparent !important; /* Quita la barra blanca */
     }}
     .stTabs [data-baseweb="tab"] {{
-        font-family: 'WuerthBold' !important; font-size: 22px !important; 
-        height: 70px; color: #444; flex: 1; text-align: center;
+        font-family: 'WuerthBold' !important; font-size: 20px !important; 
+        height: 60px; color: #444; flex: 1; text-align: center;
+        background-color: #e0e0e0; 
+        border-radius: 15px 15px 0 0 !important; /* Puntas redondeadas */
+        border: none !important;
     }}
     .stTabs [aria-selected="true"] {{ 
-        color: #CC0000 !important; border-bottom: 4px solid #CC0000 !important;
-        background-color: #f8f8f8;
+        color: #CC0000 !important; 
+        background-color: rgba(242, 242, 242, 0.98) !important;
+        border-bottom: 3px solid #CC0000 !important;
     }}
 
-    .card {{ background-color: white; padding: 30px; border-radius: 15px; margin: 20px; border: 1px solid #ddd; }}
+    /* TARJETAS DE CONTENIDO */
+    .card {{ 
+        background-color: white; padding: 30px; border-radius: 15px; 
+        margin: 10px 20px 20px 20px; border: 1px solid #ddd;
+        box-shadow: 0px 10px 30px rgba(0,0,0,0.1);
+    }}
     
-    /* DESCUENTO CON ESPACIADO AL BOTÓN */
     .big-num {{ 
         color: #CC0000; font-family: 'WuerthBold'; 
-        font-size: 110px; text-align: center; 
-        line-height: 1; margin-bottom: 30px; /* Espacio extra abajo */
+        font-size: 100px; text-align: center; 
+        line-height: 1; margin-bottom: 25px;
     }}
     
     .footer-logo {{ position: fixed; bottom: 20px; right: 20px; width: 140px; pointer-events: none; }}
@@ -112,81 +122,75 @@ st.markdown(f"""
     </div>
     """, unsafe_allow_html=True)
 
-with st.container():
-    st.markdown('<div class="main-body">', unsafe_allow_html=True)
-    
-    t1, t2, t3 = st.tabs(["📊 CALCULADORA", "🛠️ CATÁLOGO", "🛒 PEDIDO"])
+# Cuerpo de la aplicación
+st.markdown('<div class="main-body">', unsafe_allow_html=True)
 
-    with t1:
-        st.markdown("<h2 style='color:#CC0000; font-family:WuerthBold; text-align:center; padding:20px 0;'>Ingresar entregas del cliente</h2>", unsafe_allow_html=True)
-        c1, c2 = st.columns([1.1, 0.9])
-        with c1:
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            qc = st.number_input("Máquinas Completas (20% c/u)", 0, 100, 0, key="n1")
-            qs = st.number_input("Máquinas sin batería (10% c/u)", 0, 100, 0, key="n2")
-            qb = st.number_input("Solo Batería o Cargador (5% c/u)", 0, 100, 0, key="n3")
-            st.markdown('</div>', unsafe_allow_html=True)
-        with c2:
-            st.markdown('<div class="card" style="text-align:center;">', unsafe_allow_html=True)
-            val = (qc * 20) + (qs * 10) + (qb * 5)
-            st.write("**Bolsa Disponible**")
-            st.markdown(f'<div class="big-num">{val}%</div>', unsafe_allow_html=True)
-            # Cambio de nombre solicitado
-            if st.button("SUMATORIA DE DESCUENTOS", use_container_width=True):
-                st.session_state.bolsa_puntos = val
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+t1, t2, t3 = st.tabs(["📊 CALCULADORA", "🛠️ CATÁLOGO", "🛒 PEDIDO"])
 
-    with t2:
-        st.markdown("<h2 style='color:#CC0000; font-family:WuerthBold; text-align:center; padding:20px 0;'>Seleccionar Máquina Nueva</h2>", unsafe_allow_html=True)
+with t1:
+    st.markdown("<h2 style='color:#CC0000; font-family:WuerthBold; text-align:center; padding:15px 0;'>Ingresar entregas del cliente</h2>", unsafe_allow_html=True)
+    c1, c2 = st.columns([1.1, 0.9])
+    with c1:
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        p = "assets/productos"
-        if os.path.exists(p):
-            prods = sorted([f for f in os.listdir(p) if f.lower().endswith('.png')])
-            if prods:
-                sel = st.selectbox("Catálogo de productos:", prods)
-                col_img, col_sel = st.columns(2)
-                with col_img:
-                    img_path = os.path.join(p, sel)
-                    try:
-                        st.image(img_path, width=300)
-                    except:
-                        st.warning("Error al cargar imagen.")
-                with col_sel:
-                    disp = st.session_state.bolsa_puntos
-                    st.write(f"**Puntos disponibles:** {disp}%")
-                    dto = st.slider("Asignar descuento (%)", 0, 30, value=min(disp, 30))
-                    if st.button("AÑADIR AL PEDIDO", use_container_width=True):
-                        if disp >= dto:
-                            st.session_state.carrito.append({"prod": sel, "dto": dto})
-                            st.session_state.bolsa_puntos -= dto
-                            st.rerun()
-            else:
-                st.warning("No hay productos en la carpeta.")
+        qc = st.number_input("Máquinas Completas (20% c/u)", 0, 100, 0, key="n1")
+        qs = st.number_input("Máquinas sin batería (10% c/u)", 0, 100, 0, key="n2")
+        qb = st.number_input("Solo Batería o Cargador (5% c/u)", 0, 100, 0, key="n3")
+        st.markdown('</div>', unsafe_allow_html=True)
+    with c2:
+        st.markdown('<div class="card" style="text-align:center;">', unsafe_allow_html=True)
+        val = (qc * 20) + (qs * 10) + (qb * 5)
+        st.write("**Bolsa Disponible**")
+        st.markdown(f'<div class="big-num">{val}%</div>', unsafe_allow_html=True)
+        if st.button("SUMATORIA DE DESCUENTOS", use_container_width=True):
+            st.session_state.bolsa_puntos = val
+            st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-    with t3:
-        st.markdown("<h2 style='color:#CC0000; font-family:WuerthBold; text-align:center; padding:20px 0;'>Resumen del Pedido</h2>", unsafe_allow_html=True)
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        if st.session_state.carrito:
-            for i, item in enumerate(st.session_state.carrito):
-                ca, cb, cc = st.columns([3, 1, 1])
-                ca.write(f"**{i+1}.** {item['prod']}")
-                cb.write(f"**-{item['dto']}%**")
-                if cc.button("Quitar", key=f"del_{i}"):
-                    st.session_state.bolsa_puntos += item['dto']
-                    st.session_state.carrito.pop(i)
-                    st.rerun()
-            st.write("---")
-            st.write(f"**Bolsa residual:** {st.session_state.bolsa_puntos}%")
-            if st.button("Borrar Todo"):
-                st.session_state.carrito = []
-                st.rerun()
-        else:
-            st.info("El pedido está vacío.")
-        st.markdown('</div>', unsafe_allow_html=True)
-    
+with t2:
+    st.markdown("<h2 style='color:#CC0000; font-family:WuerthBold; text-align:center; padding:15px 0;'>Seleccionar Máquina Nueva</h2>", unsafe_allow_html=True)
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    p = "assets/productos"
+    if os.path.exists(p):
+        prods = sorted([f for f in os.listdir(p) if f.lower().endswith('.png')])
+        if prods:
+            sel = st.selectbox("Catálogo de productos:", prods)
+            col_img, col_sel = st.columns(2)
+            with col_img:
+                img_path = os.path.join(p, sel)
+                try:
+                    st.image(img_path, width=300)
+                except:
+                    st.warning("Error al cargar imagen.")
+            with col_sel:
+                disp = st.session_state.bolsa_puntos
+                st.write(f"**Puntos disponibles:** {disp}%")
+                dto = st.slider("Asignar descuento (%)", 0, 30, value=min(disp, 30))
+                if st.button("AÑADIR AL PEDIDO", use_container_width=True):
+                    if disp >= dto:
+                        st.session_state.carrito.append({"prod": sel, "dto": dto})
+                        st.session_state.bolsa_puntos -= dto
+                        st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
+
+with t3:
+    st.markdown("<h2 style='color:#CC0000; font-family:WuerthBold; text-align:center; padding:15px 0;'>Resumen del Pedido</h2>", unsafe_allow_html=True)
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    if st.session_state.carrito:
+        for i, item in enumerate(st.session_state.carrito):
+            ca, cb, cc = st.columns([3, 1, 1])
+            ca.write(f"**{i+1}.** {item['prod']}")
+            cb.write(f"**-{item['dto']}%**")
+            if cc.button("Quitar", key=f"del_{i}"):
+                st.session_state.bolsa_puntos += item['dto']
+                st.session_state.carrito.pop(i)
+                st.rerun()
+        st.write("---")
+        st.write(f"**Bolsa residual:** {st.session_state.bolsa_puntos}%")
+    else:
+        st.info("El pedido está vacío.")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
 
 if red_stripe_base64:
     st.markdown(f'<img src="data:image/png;base64,{red_stripe_base64}" class="footer-logo">', unsafe_allow_html=True)
