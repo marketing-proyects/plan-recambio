@@ -35,7 +35,7 @@ st.markdown(f"""
     @font-face {{ font-family: 'WuerthBold'; src: url('data:font/ttf;base64,{f_bold}'); }}
     
     header {{ visibility: hidden; }}
-    .stMarkdown a {{ display: none !important; }} 
+    .stMarkdown a {{ display: none !important; }} /* Quita el icono de clip */
     
     .stApp {{ background: none; }}
     .bg-layer {{
@@ -55,6 +55,7 @@ st.markdown(f"""
         font-size: 18px !important;
     }}
 
+    /* Eliminar bloques blancos de los contenedores de Streamlit */
     div[data-testid="stNumberInput"] > div, div[data-baseweb="input"] {{
         background-color: transparent !important;
         border: none !important;
@@ -62,34 +63,25 @@ st.markdown(f"""
 
     /* Tarjeta Unificada */
     .card {{ 
-        background-color: white; 
-        padding: 30px 20px; /* Aumento de padding superior e inferior */
-        border-radius: 15px; 
-        border: 1px solid #ddd; 
-        box-shadow: 0px 10px 30px rgba(0,0,0,0.1);
+        background-color: white; padding: 30px; border-radius: 15px; 
+        border: 1px solid #ddd; box-shadow: 0px 10px 30px rgba(0,0,0,0.1);
         margin-bottom: 20px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
     }}
     
     .card-title {{
-        color: #CC0000; 
-        font-family: 'WuerthBold'; 
-        font-size: 34px; /* Un poco más grande */
-        text-align: center; 
-        margin-bottom: 30px; 
-        text-transform: uppercase;
-        line-height: 1.2; /* Ajuste de centrado vertical interno del texto */
+        color: #CC0000; font-family: 'WuerthBold'; font-size: 32px;
+        text-align: center; margin-bottom: 25px; text-transform: uppercase;
     }}
 
     .big-num {{ color: #CC0000; font-family: 'WuerthBold'; font-size: 90px; text-align: center; line-height: 1; }}
 
     /* Tabs Personalizadas */
+    .stTabs [data-baseweb="tab-list"] {{ background-color: transparent !important; }}
     .stTabs [data-baseweb="tab"] {{
-        font-family: 'WuerthBold' !important;
-        background-color: #e8e8e8;
+        font-family: 'WuerthBold' !important; font-size: 18px !important;
+        background-color: #e8e8e8; border-radius: 10px 10px 0 0 !important;
     }}
+    .stTabs [aria-selected="true"] {{ background-color: #f5f5f5 !important; color: #CC0000 !important; }}
     </style>
     <div class="bg-layer"></div>
     """, unsafe_allow_html=True)
@@ -106,13 +98,14 @@ st.markdown(f"""
     </div>
     """, unsafe_allow_html=True)
 
-# --- DATOS CLIENTE ---
+# --- DATOS CLIENTE (RESTABLECIDOS) ---
 col_n, col_v = st.columns([1.5, 1])
 with col_n:
     st.session_state.nombre_cliente = st.text_input("NOMBRE DEL CLIENTE", value=st.session_state.nombre_cliente)
 with col_v:
     st.session_state.numero_cliente = st.text_input("N° CLIENTE", value=st.session_state.numero_cliente)
 
+# --- NAVEGACIÓN (RESTABLECIDA) ---
 t1, t2, t3 = st.tabs(["📊 CALCULADORA", "🛠️ CATÁLOGO", "🛒 PEDIDO"])
 
 with t1:
@@ -124,8 +117,8 @@ with t1:
         qb = st.number_input("Solo Batería o Cargador (5% c/u)", 0, 100, 0, key="n3")
     with c2:
         val = (qc * 20) + (qs * 10) + (qb * 5)
-        st.markdown(f'<div style="text-align:center; margin-top:10px;"><b>Bolsa Disponible</b><div class="big-num">{val}%</div></div>', unsafe_allow_html=True)
-        if st.button("CARGAR BOLSA", use_container_width=True):
+        st.markdown(f'<div style="text-align:center; margin-top:20px;"><b>Bolsa Disponible</b><div class="big-num">{val}%</div></div>', unsafe_allow_html=True)
+        if st.button("SUMAR DESCUENTOS", use_container_width=True):
             st.session_state.bolsa_puntos = val
             st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
