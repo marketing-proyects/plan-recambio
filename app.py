@@ -31,7 +31,7 @@ logo_base64 = get_base64("logo_wurth.jpg")
 red_stripe_base64 = get_base64("logo_red_stripe.png")
 f_bold = get_base64("WuerthBold.ttf")
 
-# --- CSS DEFINITIVO (LIMPIEZA DE BARRAS Y RECTÁNGULOS) ---
+# --- CSS DEFINITIVO (MENÚ EN GRIS CLARO AL SELECCIONAR) ---
 st.markdown(f"""
     <style>
     @font-face {{ font-family: 'WuerthBold'; src: url('data:font/ttf;base64,{f_bold}'); }}
@@ -51,13 +51,11 @@ st.markdown(f"""
         background-size: cover; background-position: center; opacity: 0.12;
     }}
 
-    /* ELIMINAR BLOQUES BLANCOS FANTASMA */
+    /* Eliminar bloques fantasma */
     [data-testid="stVerticalBlock"] > div:empty {{ display: none !important; }}
-    [data-testid="stHorizontalBlock"] {{ background: none !important; }}
-    div.st-emotion-cache-1kyx60e {{ display: none !important; }} /* Referencia a bloques vacíos */
 
     .main-body {{
-        background-color: transparent; /* Fondo transparente para que se vea el fondo atrás entre bloques */
+        background-color: transparent;
         padding-bottom: 40px;
     }}
 
@@ -77,23 +75,26 @@ st.markdown(f"""
         text-align: center; line-height: 1.1;
     }}
 
-    /* MENÚ INSTITUCIONAL REDONDEADO */
-    .stTabs {{ background: transparent !important; }}
+    /* MENÚ INSTITUCIONAL CON FONDO GRIS AL SELECCIONAR */
+    .stTabs {{ background: transparent !important; border: none !important; }}
     .stTabs [data-baseweb="tab-list"] {{ 
-        gap: 15px; padding: 10px 20px; 
-        background-color: transparent !important; /* Quita la barra blanca */
+        gap: 10px; padding: 10px 20px; 
+        background-color: transparent !important; 
     }}
     .stTabs [data-baseweb="tab"] {{
         font-family: 'WuerthBold' !important; font-size: 20px !important; 
-        height: 60px; color: #444; flex: 1; text-align: center;
-        background-color: #e0e0e0; 
-        border-radius: 15px 15px 0 0 !important; /* Puntas redondeadas */
+        height: 60px; color: #666; flex: 1; text-align: center;
+        background-color: #e8e8e8; /* Color base apagado */
+        border-radius: 12px 12px 0 0 !important; 
         border: none !important;
+        transition: background-color 0.3s ease;
     }}
+    
+    /* Efecto de Pestaña Seleccionada: Gris Claro + Linea Roja */
     .stTabs [aria-selected="true"] {{ 
         color: #CC0000 !important; 
-        background-color: rgba(242, 242, 242, 0.98) !important;
-        border-bottom: 3px solid #CC0000 !important;
+        background-color: #f5f5f5 !important; /* Gris claro solicitado */
+        border-bottom: 4px solid #CC0000 !important;
     }}
 
     /* TARJETAS DE CONTENIDO */
@@ -122,7 +123,6 @@ st.markdown(f"""
     </div>
     """, unsafe_allow_html=True)
 
-# Cuerpo de la aplicación
 st.markdown('<div class="main-body">', unsafe_allow_html=True)
 
 t1, t2, t3 = st.tabs(["📊 CALCULADORA", "🛠️ CATÁLOGO", "🛒 PEDIDO"])
