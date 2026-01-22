@@ -130,16 +130,17 @@ with t2:
     # --- DICCIONARIO DE TRADUCCIÓN ---
     # Agrega aquí todos tus productos siguiendo este formato
     nombres_reales = {
-        "ABHR 20 LIGHT_1.png": "Rotomartillo Ligth",
-        "ABHR 20 POWER_1.png": "Rotomartillo Power",
         "ABSR 12 COMPACT_2.png": "Taladro Destornillador ABS Compacto",
         "ABSR 20 COMBI_1.png": "Taladro Atornillador ABSR 20 Combinado",
         "ABSR 20 COMBI_2.png": "Taladro Atornillador ABSR 20 Compact",
-        "ASSR 20 - 12 POWER_1.png": "LLave de Impacto sin carbones",
-        "ASSR 20 - 34_1.png": "LLave de Impacto 3/4",
-        "ASSR 20_3.png": "Atornillador de Impacto Master ASSR 20 14 inch Compact",
+        "ABSR 20 PWR COMBI_1.png": "Taladro Percutor y Atornillador ABSR 20 PWR Combi",
         "AWSR 20 COMPACT_1.png": "Amoladora Angular AWS R 20 - 115 Compact",
-        "ABSR 20 PWR COMBI_1.png": "Taladro Percutor y Atornillador ABSR 20 PWR Combi"
+        "ASSR 20_3.png": "Atornillador de Impacto Master ASSR 20 14 inch Compact",                     
+        "ASSR 20 - 12 POWER_1.png": "LLave de Impacto sin carbones",
+        "ASSR 20 - 34_1.png": "LLave de Impacto 3/4"
+        "ABHR 20 LIGHT_1.png": "Rotomartillo Ligth",
+        "ABHR 20 POWER_1.png": "Rotomartillo Power"
+               
     }
 
     if os.path.exists(p):
