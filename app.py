@@ -134,7 +134,7 @@ with t2:
         "ABHR 20 POWER_1.png": "Rotomartillo Power",
         "ABSR 12 COMPACT_2.png": "Taladro Destornillador ABS Compacto",
         "ABSR 20 COMBI_1.png": "Taladro Atornillador ABSR 20 Combinado",
-        "ABSR 20 COMBI_2.png ": "Taladro Atornillador ABSR 20 Compact",
+        "ABSR 20 COMBI_2.png": "Taladro Atornillador ABSR 20 Compact",
         "ASSR 20 - 12 POWER_1.png": "LLave de Impacto sin carbones",
         "ASSR 20 - 34_1.png": "LLave de Impacto 3/4",
         "ASSR 20_3.png": "Atornillador de Impacto Master ASSR 20 14 inch Compact",
