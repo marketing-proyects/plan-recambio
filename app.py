@@ -21,10 +21,9 @@ if 'carrito' not in st.session_state: st.session_state.carrito = []
 if 'dto_base' not in st.session_state: st.session_state.dto_base = 0
 if 'nombre_cliente' not in st.session_state: st.session_state.nombre_cliente = ""
 if 'numero_cliente' not in st.session_state: st.session_state.numero_cliente = ""
-if 'entregas_total' not in st.session_state: st.session_state.entregas_total = 0
+if 'active_tab' not in st.session_state: st.session_state.active_tab = "📊 CALCULADORA"
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-# Asegúrate de que el nombre del archivo coincida con tu logo cuadrado
 red_stripe_base64 = get_base64("favicon.png") 
 
 st.set_page_config(
@@ -37,7 +36,7 @@ fondo_path = get_random_bg()
 logo_base64 = get_base64("logo_wurth.jpg")
 f_bold = get_base64("WuerthBold.ttf")
 
-# --- CSS INTEGRAL (DISEÑO Y CENTRADO) ---
+# --- CSS INTEGRAL ---
 st.markdown(f"""
     <style>
     @font-face {{ font-family: 'WuerthBold'; src: url('data:font/ttf;base64,{f_bold}'); }}
@@ -90,7 +89,6 @@ st.markdown(f"""
     }}
     .stTabs [aria-selected="true"] {{ background-color: #f5f5f5 !important; color: #CC0000 !important; }}
 
-    /* Botón verde para beneficio activado */
     .btn-active button {{
         background-color: #28a745 !important;
         color: white !important;
@@ -119,98 +117,95 @@ with col_n:
 with col_v:
     st.session_state.numero_cliente = st.text_input("N° CLIENTE", value=st.session_state.numero_cliente)
 
-t1, t2, t3 = st.tabs(["📊 CALCULADORA", "🛠️ CATÁLOGO", "🛒 PEDIDO"])
+# --- NAVEGACIÓN CON CONTROL DE PESTAÑA ---
+tabs = ["📊 CALCULADORA", "🛠️ CATÁLOGO", "🛒 PEDIDO"]
+active_tab = st.tabs(tabs)
 
-with t1:
+# --- PESTAÑA 1: CALCULADORA ---
+with active_tab[0]:
     st.markdown('<div class="card"><div class="card-title">Ingresar entregas del cliente</div>', unsafe_allow_html=True)
     c1, c2 = st.columns([1.2, 0.8])
     with c1:
-        qc = st.number_input("Máquinas Completas (20% c/u)", 0, 100, 0, key="n1")
-        qs = st.number_input("Máquinas sin batería (10% c/u)", 0, 100, 0, key="n2")
-        qb = st.number_input("Solo Batería o Cargador (5% c/u)", 0, 100, 0, key="n3")
-        
-        total_entregas = qc + qs + qb
-        st.markdown(f'<div style="margin-top:20px;"><b>Unidades Entregadas</b><div class="small-num">{total_entregas}</div></div>', unsafe_allow_html=True)
+        qc = st.number_input("Máquinas Completas (20%)", 0, 100, 0, key="n1")
+        qs = st.number_input("Máquinas sin batería (10%)", 0, 100, 0, key="n2")
+        qb = st.number_input("Solo Batería o Cargador (5%)", 0, 100, 0, key="n3")
+        total_u = qc + qs + qb
+        st.markdown(f'<div style="margin-top:20px;"><b>Unidades Entregadas</b><div class="small-num">{total_u}</div></div>', unsafe_allow_html=True)
         
     with c2:
-        val = (qc * 20) + (qs * 10) + (qb * 5)
-        st.markdown(f'<div style="margin-top:20px;"><b>SUMATORIA DESCUENTOS</b><div class="big-num">{val}%</div></div>', unsafe_allow_html=True)
+        val_calculado = (qc * 20) + (qs * 10) + (qb * 5)
+        # TOPEAR EL VALOR VISUAL AL 20%
+        val_topeado = min(val_calculado, 20)
         
-        # Lógica de activación
+        st.markdown(f'<div style="margin-top:20px;"><b>SUMATORIA DESCUENTOS</b><div class="big-num">{val_topeado}%</div></div>', unsafe_allow_html=True)
+        
         if st.session_state.dto_base >= 20:
              st.markdown('<div class="btn-active">', unsafe_allow_html=True)
-             st.button("BENEFICIO ACTIVADO", use_container_width=True)
+             st.button("BENEFICIO ACTIVADO", use_container_width=True, disabled=True)
              st.markdown('</div>', unsafe_allow_html=True)
-             st.success("El beneficio de recambio ya está activo.")
         else:
-            if val >= 20:
+            if val_calculado >= 20:
                 st.markdown('<div class="btn-active">', unsafe_allow_html=True)
-                if st.button("ACTIVAR RECAMBIO (20%)", use_container_width=True):
+                if st.button("ACTIVAR RECAMBIO", use_container_width=True):
                     st.session_state.dto_base = 20
+                    st.success("¡Beneficio activado! Redirigiendo al catálogo...")
+                    # Simular salto de pestaña no es nativo en st.tabs, pero el usuario ya puede cambiar. 
+                    # Lo ideal es informar que ya puede avanzar.
                     st.rerun()
                 st.markdown('</div>', unsafe_allow_html=True)
             else:
                 st.button("MÍNIMO 20% REQUERIDO", use_container_width=True, disabled=True)
-                
     st.markdown('</div>', unsafe_allow_html=True)
 
-with t2:
+# --- PESTAÑA 2: CATÁLOGO ---
+with active_tab[1]:
     st.markdown('<div class="card"><div class="card-title">Seleccionar Máquina Nueva</div>', unsafe_allow_html=True)
-    
-    if st.session_state.dto_base < 20:
-        st.warning("Debe completar al menos el 20% en la CALCULADORA para acceder al beneficio.")
-    else:
-        p = "assets/productos"
-        nombres_reales = {
-            "ABSR 12 COMPACT_2.png": "Taladro Destornillador ABS Compacto",
-            "ABSR 20 COMBI_1.png": "Taladro Atornillador ABSR 20 Combinado",
-            "ABSR 20 COMBI_2.png": "Taladro Atornillador ABSR 20 Compact",
-            "ABSR 20 PWR COMBI_1.png": "Taladro Percutor y Atornillador ABSR 20 PWR Combi",
-            "AWSR 20 COMPACT_1.png": "Amoladora Angular AWS R 20 - 115 Compact",
-            "ASSR 20_3.png": "Atornillador de Impacto Master ASSR 20 14 inch Compact",                     
-            "ASSR 20 - 12 POWER_1.png": "LLave de Impacto sin carbones",
-            "ASSR 20 - 34_1.png": "LLave de Impacto 3/4",
-            "ABHR 20 LIGHT_1.png": "Rotomartillo Ligth",
-            "ABHR 20 POWER_1.png": "Rotomartillo Power"
-        }
+    p = "assets/productos"
+    nombres_reales = {
+        "ABSR 12 COMPACT_2.png": "Taladro Destornillador ABS Compacto",
+        "ABSR 20 COMBI_1.png": "Taladro Atornillador ABSR 20 Combinado",
+        "ABSR 20 COMBI_2.png": "Taladro Atornillador ABSR 20 Compact",
+        "ABSR 20 PWR COMBI_1.png": "Taladro Percutor y Atornillador ABSR 20 PWR Combi",
+        "AWSR 20 COMPACT_1.png": "Amoladora Angular AWS R 20 - 115 Compact",
+        "ASSR 20_3.png": "Atornillador de Impacto Master ASSR 20 14 inch Compact",                     
+        "ASSR 20 - 12 POWER_1.png": "LLave de Impacto sin carbones",
+        "ASSR 20 - 34_1.png": "LLave de Impacto 3/4",
+        "ABHR 20 LIGHT_1.png": "Rotomartillo Ligth",
+        "ABHR 20 POWER_1.png": "Rotomartillo Power"
+    }
 
-        if os.path.exists(p):
-            archivos = sorted([f for f in os.listdir(p) if f.lower().endswith('.png')])
-            if archivos:
-                def mostrar_nombre(archivo):
-                    return nombres_reales.get(archivo, archivo)
+    if os.path.exists(p):
+        archivos = sorted([f for f in os.listdir(p) if f.lower().endswith('.png')])
+        if archivos:
+            def mostrar_nombre(archivo):
+                return nombres_reales.get(archivo, archivo)
 
-                sel = st.selectbox("Seleccionar producto:", archivos, format_func=mostrar_nombre)
-
-                ci, cs = st.columns(2)
-                with ci:
-                    st.image(os.path.join(p, sel), width=280)
-                with cs:
-                    # Lógica de escala de descuento
-                    items_en_carrito = len(st.session_state.carrito)
-                    dto_actual = 30 if (items_en_carrito + 1) >= 3 else 20
-                    
-                    st.write(f"**Producto:** {mostrar_nombre(sel)}")
+            sel = st.selectbox("Producto:", archivos, format_func=mostrar_nombre)
+            ci, cs = st.columns(2)
+            with ci:
+                st.image(os.path.join(p, sel), width=280)
+            with cs:
+                st.write(f"**Producto:** {mostrar_nombre(sel)}")
+                
+                # Cálculo de descuento
+                if st.session_state.dto_base < 20:
+                    st.error("Descuento no aplicado: Debe completar el recambio en la calculadora.")
+                    dto_actual = 0
+                else:
+                    items_futuros = len(st.session_state.carrito) + 1
+                    dto_actual = 30 if items_futuros >= 3 else 20
                     st.write(f"**Descuento Aplicable:** {dto_actual}%")
-                    
-                    if dto_actual < 30:
-                        st.caption("Añada 3 o más unidades para obtener 30% de descuento.")
-                    else:
-                        st.success("¡Descuento por volumen activado (30%)!")
+                    if dto_actual == 30: st.success("¡Beneficio 30% aplicado!")
 
-                    if st.button("AÑADIR AL PEDIDO", use_container_width=True):
-                        st.session_state.carrito.append({
-                            "prod": mostrar_nombre(sel), 
-                            "dto": dto_actual
-                        })
-                        # Actualizar todos al 30% si llegamos al umbral
-                        if len(st.session_state.carrito) >= 3:
-                            for item in st.session_state.carrito:
-                                item['dto'] = 30
-                        st.rerun()
+                if st.button("AÑADIR AL PEDIDO", use_container_width=True):
+                    st.session_state.carrito.append({"prod": mostrar_nombre(sel), "dto": dto_actual})
+                    if len(st.session_state.carrito) >= 3:
+                        for item in st.session_state.carrito: item['dto'] = 30
+                    st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-with t3:
+# --- PESTAÑA 3: PEDIDO ---
+with active_tab[2]:
     st.markdown(f'<div class="card"><div class="card-title">Pedido: {st.session_state.nombre_cliente}</div>', unsafe_allow_html=True)
     if st.session_state.carrito:
         for i, item in enumerate(st.session_state.carrito):
@@ -219,16 +214,13 @@ with t3:
             cb.write(f"**-{item['dto']}%**")
             if cc.button("Quitar", key=f"del_{i}"):
                 st.session_state.carrito.pop(i)
-                # Revertir al 20% si bajamos de 3 unidades
                 if len(st.session_state.carrito) < 3:
-                    for it in st.session_state.carrito:
-                        it['dto'] = 20
+                    for it in st.session_state.carrito: it['dto'] = 20 if st.session_state.dto_base >= 20 else 0
                 st.rerun()
-        
         st.divider()
-        total_herramientas = len(st.session_state.carrito)
-        dto_final = 30 if total_herramientas >= 3 else 20
-        st.write(f"**Total de herramientas:** {total_herramientas}")
+        total_h = len(st.session_state.carrito)
+        dto_final = 30 if total_h >= 3 else (20 if st.session_state.dto_base >= 20 else 0)
+        st.write(f"**Total de herramientas:** {total_h}")
         st.write(f"**Descuento aplicado:** {dto_final}%")
     else:
         st.info("El pedido está vacío.")
