@@ -131,7 +131,7 @@ with t2:
     # Agrega aquí todos tus productos siguiendo este formato
     nombres_reales = {
         "ABHR 20 LIGHT_1.png": "Rotomartillo Ligth",
-        "ABHR 20 POWER_1.png": "XXX",
+        "ABHR 20 POWER_1.png": "Rotomartillo Power",
         "ABSR 12 COMPACT_2.png": "Taladro Destornillador ABS Compacto",
         "ABSR 20 COMBI_1.png": "Taladro Atornillador ABSR 20 Combinado",
         "ASSR 20 - 12 POWER_1": "Taladro Destornillador ABSR Compacto",
