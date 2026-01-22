@@ -128,17 +128,18 @@ elif st.session_state.tab_actual == "CATÁLOGO":
                     st.error("Descuento 0%: Pase por la calculadora.")
                     dto_item = 0
                 else:
-                    # LÓGICA CORREGIDA: Solo avisa 30% si realmente vas a poner el 3ero.
-                    dto_item = 30 if (num_en_carro + 1) >= 3 else 20
-                    st.write(f"**Descuento Aplicable:** {dto_item}%")
-                    
-                    if (num_en_carro + 1) >= 3:
-                        st.success("¡Este artículo activa el 30% en todo el pedido!")
+                    # LÓGICA DE MENSAJE CORREGIDA
+                    faltantes = 3 - num_en_carro
+                    if num_en_carro >= 3:
+                        st.success("¡Beneficio 30% activado en todo el pedido!")
+                        dto_item = 30
                     else:
-                        st.info(f"Faltan {3 - (num_en_carro + 1)} unidad(es) para el beneficio de 30%.")
+                        dto_item = 20 # Por defecto es 20 hasta que se añada el 3ero
+                        st.info(f"Faltan {faltantes} unidad(es) en el pedido para el beneficio de 30%.")
 
                 if st.button("AÑADIR AL PEDIDO", use_container_width=True):
-                    st.session_state.carrito.append({"prod": mostrar_nombre(sel), "dto": dto_item})
+                    # Al añadir, si el carro pasa a tener 3, todos se vuelven 30
+                    st.session_state.carrito.append({"prod": mostrar_nombre(sel), "dto": 20}) # Se añade al 20
                     if len(st.session_state.carrito) >= 3:
                         for it in st.session_state.carrito: it['dto'] = 30
                     st.toast(f"✅ {mostrar_nombre(sel)} añadido")
@@ -155,6 +156,7 @@ elif st.session_state.tab_actual == "PEDIDO":
             cb.write(f"**-{item['dto']}%**")
             if cc.button("Quitar", key=f"del_{i}"):
                 st.session_state.carrito.pop(i)
+                # Si baja de 3, todos vuelven al 20%
                 if len(st.session_state.carrito) < 3:
                     for it in st.session_state.carrito: it['dto'] = 20 if st.session_state.dto_base >= 20 else 0
                 st.rerun()
