@@ -24,7 +24,7 @@ if 'numero_cliente' not in st.session_state: st.session_state.numero_cliente = "
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 # 1. Primero cargamos la imagen del icono (Favicon)
-red_stripe_base64 = get_base64("logo_red_stripe.png") 
+red_stripe_base64 = get_base64("favicon.png") 
 
 # 2. Luego configuramos la página usando esa imagen
 st.set_page_config(
