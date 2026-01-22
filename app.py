@@ -137,7 +137,7 @@ with t2:
         "ASSR 20 - 12 POWER_1": "Taladro Destornillador ABSR Compacto",
         "ASSR 20 - 34_1": "Taladro Atornillador ABSR 20 Compacto",
         "ASSR 20_3": "Taladro Percutor y Atornilllador ABSR 20 PWR Combinado",
-        "AWSR 20 COMPACT_1.png": "Llave de Impacto AWSR 20"
+        "AWSR 20 COMPACT_1.png": "Amoladora Angular AWS R 20 - 115 Compact"
     }
 
     if os.path.exists(p):
