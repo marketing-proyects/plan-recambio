@@ -21,9 +21,10 @@ if 'carrito' not in st.session_state: st.session_state.carrito = []
 if 'dto_base' not in st.session_state: st.session_state.dto_base = 0
 if 'nombre_cliente' not in st.session_state: st.session_state.nombre_cliente = ""
 if 'numero_cliente' not in st.session_state: st.session_state.numero_cliente = ""
-if 'active_tab' not in st.session_state: st.session_state.active_tab = "📊 CALCULADORA"
+if 'tab_actual' not in st.session_state: st.session_state.tab_actual = "CALCULADORA"
 
 # --- CONFIGURACIÓN DE PÁGINA ---
+# Usamos el logo cuadrado de Red Stripe que creamos
 red_stripe_base64 = get_base64("favicon.png") 
 
 st.set_page_config(
@@ -51,6 +52,7 @@ st.markdown(f"""
         background-size: cover; background-position: center; opacity: 0.12;
     }}
 
+    /* Inputs */
     div[data-testid="stTextInput"] input, div[data-testid="stNumberInput"] input {{
         background-color: transparent !important;
         border: none !important;
@@ -66,6 +68,7 @@ st.markdown(f"""
         border: none !important;
     }}
 
+    /* Tarjeta */
     .card {{ 
         background-color: white; padding: 50px 40px; border-radius: 15px; 
         border: 1px solid #ddd; box-shadow: 0px 10px 30px rgba(0,0,0,0.1);
@@ -82,13 +85,31 @@ st.markdown(f"""
     .big-num {{ color: #CC0000; font-family: 'WuerthBold'; font-size: 90px; line-height: 1; }}
     .small-num {{ color: #333; font-family: 'WuerthBold'; font-size: 40px; margin-top: 5px; }}
 
-    .stTabs [data-baseweb="tab-list"] {{ background-color: transparent !important; }}
-    .stTabs [data-baseweb="tab"] {{
-        font-family: 'WuerthBold' !important; font-size: 18px !important;
-        background-color: #e8e8e8; border-radius: 10px 10px 0 0 !important;
+    /* Navegación estilo Tabs con Radio */
+    .nav-container {{
+        display: flex;
+        justify-content: space-around;
+        margin-bottom: 20px;
+        background: #e8e8e8;
+        border-radius: 12px 12px 0 0;
+        overflow: hidden;
     }}
-    .stTabs [aria-selected="true"] {{ background-color: #f5f5f5 !important; color: #CC0000 !important; }}
+    .nav-item {{
+        flex: 1;
+        padding: 15px;
+        text-align: center;
+        font-family: 'WuerthBold';
+        cursor: pointer;
+        color: #666;
+        transition: 0.3s;
+    }}
+    .nav-item.active {{
+        background: #f5f5f5;
+        color: #CC0000;
+        border-bottom: 3px solid #CC0000;
+    }}
 
+    /* Botón verde */
     .btn-active button {{
         background-color: #28a745 !important;
         color: white !important;
@@ -117,48 +138,46 @@ with col_n:
 with col_v:
     st.session_state.numero_cliente = st.text_input("N° CLIENTE", value=st.session_state.numero_cliente)
 
-# --- NAVEGACIÓN CON CONTROL DE PESTAÑA ---
-tabs = ["📊 CALCULADORA", "🛠️ CATÁLOGO", "🛒 PEDIDO"]
-active_tab = st.tabs(tabs)
+# --- NAVEGACIÓN CONTROLADA ---
+col1, col2, col3 = st.columns(3)
+if col1.button("📊 CALCULADORA", use_container_width=True): st.session_state.tab_actual = "CALCULADORA"
+if col2.button("🛠️ CATÁLOGO", use_container_width=True): st.session_state.tab_actual = "CATÁLOGO"
+if col3.button("🛒 PEDIDO", use_container_width=True): st.session_state.tab_actual = "PEDIDO"
 
-# --- PESTAÑA 1: CALCULADORA ---
-with active_tab[0]:
+st.divider()
+
+# --- LÓGICA DE PESTAÑAS ---
+if st.session_state.tab_actual == "CALCULADORA":
     st.markdown('<div class="card"><div class="card-title">Ingresar entregas del cliente</div>', unsafe_allow_html=True)
     c1, c2 = st.columns([1.2, 0.8])
     with c1:
-        qc = st.number_input("Máquinas Completas (20%)", 0, 100, 0, key="n1")
-        qs = st.number_input("Máquinas sin batería (10%)", 0, 100, 0, key="n2")
-        qb = st.number_input("Solo Batería o Cargador (5%)", 0, 100, 0, key="n3")
-        total_u = qc + qs + qb
-        st.markdown(f'<div style="margin-top:20px;"><b>Unidades Entregadas</b><div class="small-num">{total_u}</div></div>', unsafe_allow_html=True)
+        qc = st.number_input("Máquinas Completas (20% c/u)", 0, 100, 0, key="n1")
+        qs = st.number_input("Máquinas sin batería (10% c/u)", 0, 100, 0, key="n2")
+        qb = st.number_input("Solo Batería o Cargador (5% c/u)", 0, 100, 0, key="n3")
+        total_ent = qc + qs + qb
+        st.markdown(f'<div style="margin-top:20px;"><b>Unidades Entregadas</b><div class="small-num">{total_ent}</div></div>', unsafe_allow_html=True)
         
     with c2:
-        val_calculado = (qc * 20) + (qs * 10) + (qb * 5)
-        # TOPEAR EL VALOR VISUAL AL 20%
-        val_topeado = min(val_calculado, 20)
+        val_real = (qc * 20) + (qs * 10) + (qb * 5)
+        val_vis = min(val_real, 20) # TOPEADO AL 20%
         
-        st.markdown(f'<div style="margin-top:20px;"><b>SUMATORIA DESCUENTOS</b><div class="big-num">{val_topeado}%</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="margin-top:20px;"><b>SUMATORIA DESCUENTOS</b><div class="big-num">{val_vis}%</div></div>', unsafe_allow_html=True)
         
         if st.session_state.dto_base >= 20:
-             st.markdown('<div class="btn-active">', unsafe_allow_html=True)
-             st.button("BENEFICIO ACTIVADO", use_container_width=True, disabled=True)
-             st.markdown('</div>', unsafe_allow_html=True)
+             st.success("¡Beneficio de recambio activado!")
         else:
-            if val_calculado >= 20:
+            if val_real >= 20:
                 st.markdown('<div class="btn-active">', unsafe_allow_html=True)
                 if st.button("ACTIVAR RECAMBIO", use_container_width=True):
                     st.session_state.dto_base = 20
-                    st.success("¡Beneficio activado! Redirigiendo al catálogo...")
-                    # Simular salto de pestaña no es nativo en st.tabs, pero el usuario ya puede cambiar. 
-                    # Lo ideal es informar que ya puede avanzar.
+                    st.session_state.tab_actual = "CATÁLOGO" # SALTO AUTOMÁTICO
                     st.rerun()
                 st.markdown('</div>', unsafe_allow_html=True)
             else:
                 st.button("MÍNIMO 20% REQUERIDO", use_container_width=True, disabled=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- PESTAÑA 2: CATÁLOGO ---
-with active_tab[1]:
+elif st.session_state.tab_actual == "CATÁLOGO":
     st.markdown('<div class="card"><div class="card-title">Seleccionar Máquina Nueva</div>', unsafe_allow_html=True)
     p = "assets/productos"
     nombres_reales = {
@@ -177,35 +196,34 @@ with active_tab[1]:
     if os.path.exists(p):
         archivos = sorted([f for f in os.listdir(p) if f.lower().endswith('.png')])
         if archivos:
-            def mostrar_nombre(archivo):
-                return nombres_reales.get(archivo, archivo)
-
+            def mostrar_nombre(archivo): return nombres_reales.get(archivo, archivo)
             sel = st.selectbox("Producto:", archivos, format_func=mostrar_nombre)
             ci, cs = st.columns(2)
-            with ci:
-                st.image(os.path.join(p, sel), width=280)
+            with ci: st.image(os.path.join(p, sel), width=280)
             with cs:
-                st.write(f"**Producto:** {mostrar_nombre(sel)}")
-                
-                # Cálculo de descuento
+                # Lógica de Descuento
+                num_en_carro = len(st.session_state.carrito)
                 if st.session_state.dto_base < 20:
-                    st.error("Descuento no aplicado: Debe completar el recambio en la calculadora.")
-                    dto_actual = 0
+                    st.error("Descuento 0%: Pase por la calculadora.")
+                    dto_item = 0
                 else:
-                    items_futuros = len(st.session_state.carrito) + 1
-                    dto_actual = 30 if items_futuros >= 3 else 20
-                    st.write(f"**Descuento Aplicable:** {dto_actual}%")
-                    if dto_actual == 30: st.success("¡Beneficio 30% aplicado!")
+                    # CORRECCIÓN: Solo muestra 30% si el PRÓXIMO item es el 3ro o más
+                    dto_item = 30 if (num_en_carro + 1) >= 3 else 20
+                    st.write(f"**Descuento Aplicable:** {dto_item}%")
+                    if (num_en_carro + 1) >= 3:
+                        st.success("¡Beneficio especial 30% aplicado!")
+                    else:
+                        st.caption("Añada 3 unidades para obtener el 30% en todo.")
 
                 if st.button("AÑADIR AL PEDIDO", use_container_width=True):
-                    st.session_state.carrito.append({"prod": mostrar_nombre(sel), "dto": dto_actual})
+                    st.session_state.carrito.append({"prod": mostrar_nombre(sel), "dto": dto_item})
                     if len(st.session_state.carrito) >= 3:
-                        for item in st.session_state.carrito: item['dto'] = 30
+                        for it in st.session_state.carrito: it['dto'] = 30
+                    st.toast(f"✅ {mostrar_nombre(sel)} añadido") # NOTIFICACIÓN
                     st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- PESTAÑA 3: PEDIDO ---
-with active_tab[2]:
+elif st.session_state.tab_actual == "PEDIDO":
     st.markdown(f'<div class="card"><div class="card-title">Pedido: {st.session_state.nombre_cliente}</div>', unsafe_allow_html=True)
     if st.session_state.carrito:
         for i, item in enumerate(st.session_state.carrito):
@@ -218,10 +236,9 @@ with active_tab[2]:
                     for it in st.session_state.carrito: it['dto'] = 20 if st.session_state.dto_base >= 20 else 0
                 st.rerun()
         st.divider()
-        total_h = len(st.session_state.carrito)
-        dto_final = 30 if total_h >= 3 else (20 if st.session_state.dto_base >= 20 else 0)
-        st.write(f"**Total de herramientas:** {total_h}")
-        st.write(f"**Descuento aplicado:** {dto_final}%")
+        n = len(st.session_state.carrito)
+        final_dto = 30 if n >= 3 else (20 if st.session_state.dto_base >= 20 else 0)
+        st.write(f"**Unidades:** {n} | **Descuento Final:** {final_dto}%")
     else:
         st.info("El pedido está vacío.")
     st.markdown('</div>', unsafe_allow_html=True)
