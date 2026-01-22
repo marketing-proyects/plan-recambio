@@ -138,7 +138,7 @@ with t2:
         "ASSR 20 - 34_1.png": "LLave de Impacto 3/4",
         "ASSR 20_3": "Taladro Percutor y Atornilllador ABSR 20 PWR Combinado",
         "AWSR 20 COMPACT_1.png": "Amoladora Angular AWS R 20 - 115 Compact"
-        "ABSR 20 PWR COMBI_1.png": "Taladro Percutor y Atornillador ABSR 20 PWR Combi"
+        "ABSR 20 PWR COMBI_1": "Taladro Percutor y Atornillador ABSR 20 PWR Combi"
     }
 
     if os.path.exists(p):
