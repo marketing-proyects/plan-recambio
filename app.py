@@ -130,9 +130,13 @@ with t2:
     # --- DICCIONARIO DE TRADUCCIÓN ---
     # Agrega aquí todos tus productos siguiendo este formato
     nombres_reales = {
-        "ABHR 20 LIGHT_1.png": "Rotomartillo ABHR 20 LIGHT",
-        "ABSR 12 COMPACT_2.png": "Atornillador ABSR 12 Compact",
-        "ABSR 20 COMBI_1.png": "Taladro Percutor ABSR 20 Combi",
+        "ABHR 20 LIGHT_1.png": "Rotomartillo Ligth",
+        "ABHR 20 POWER_1.png": "XXX",
+        "ABSR 12 COMPACT_2.png": "Taladro Destornillador ABS Compacto",
+        "ABSR 20 COMBI_1.png": "Taladro Atornillador ABSR 20 Combinado",
+        "ASSR 20 - 12 POWER_1": "Taladro Destornillador ABSR Compacto",
+        "ASSR 20 - 34_1": "Taladro Atornillador ABSR 20 Compacto",
+        "ASSR 20_3": "Taladro Percutor y Atornilllador ABSR 20 PWR Combinado",
         "AWSR 20 COMPACT_1.png": "Llave de Impacto AWSR 20"
     }
 
