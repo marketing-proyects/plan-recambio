@@ -25,7 +25,7 @@ if 'entregas_total' not in st.session_state: st.session_state.entregas_total = 0
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 # Asegúrate de que el nombre del archivo coincida con tu logo cuadrado
-red_stripe_base64 = get_base64("logo_red_stripe.png") 
+red_stripe_base64 = get_base64("favicon.png") 
 
 st.set_page_config(
     page_title="Würth Plan Recambio", 
