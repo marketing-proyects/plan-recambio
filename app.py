@@ -24,7 +24,7 @@ if 'numero_cliente' not in st.session_state: st.session_state.numero_cliente = "
 if 'tab_actual' not in st.session_state: st.session_state.tab_actual = "CALCULADORA"
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-red_stripe_base64 = get_base64("logo_red_stripe.png") 
+red_stripe_base64 = get_base64("favicon.png") 
 st.set_page_config(page_title="Würth Plan Recambio", page_icon=f"data:image/png;base64,{red_stripe_base64}", layout="centered")
 
 fondo_path = get_random_bg()
