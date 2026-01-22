@@ -136,7 +136,7 @@ with t2:
         "ABSR 20 COMBI_1.png": "Taladro Atornillador ABSR 20 Combinado",
         "ASSR 20 - 12 POWER_1": "LLave de Impacto sin carbones",
         "ASSR 20 - 34_1.png": "LLave de Impacto 3/4",
-        "ASSR 20_3": "Taladro Percutor y Atornilllador ABSR 20 PWR Combinado",
+        "ASSR 20_3": "Atornillador de Impacto Master ASSR 20 14 inch Compact",
         "AWSR 20 COMPACT_1.png": "Amoladora Angular AWS R 20 - 115 Compact",
         "ABSR 20 PWR COMBI_1.png": "Taladro Percutor y Atornillador ABSR 20 PWR Combi"
     }
