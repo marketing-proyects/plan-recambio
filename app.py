@@ -23,8 +23,17 @@ if 'nombre_cliente' not in st.session_state: st.session_state.nombre_cliente = "
 if 'numero_cliente' not in st.session_state: st.session_state.numero_cliente = ""
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="Würth Plan Recambio", layout="centered")
+# 1. Primero cargamos la imagen del icono (Favicon)
+red_stripe_base64 = get_base64("logo_red_stripe.png") 
 
+# 2. Luego configuramos la página usando esa imagen
+st.set_page_config(
+    page_title="Würth Plan Recambio", 
+    page_icon=f"data:image/png;base64,{red_stripe_base64}", 
+    layout="centered"
+)
+
+# 3. El resto sigue igual (fondo, logos, etc.)
 fondo_path = get_random_bg()
 logo_base64 = get_base64("logo_wurth.jpg")
 f_bold = get_base64("WuerthBold.ttf")
