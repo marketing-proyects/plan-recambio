@@ -126,19 +126,49 @@ with t1:
 with t2:
     st.markdown('<div class="card"><div class="card-title">Seleccionar Máquina Nueva</div>', unsafe_allow_html=True)
     p = "assets/productos"
+    
+    # --- DICCIONARIO DE TRADUCCIÓN ---
+    # Agrega aquí todos tus productos siguiendo este formato
+    nombres_reales = {
+        "ABHR 20 LIGHT_1.png": "Rotomartillo ABHR 20 LIGHT",
+        "ABSR 12 COMPACT_2.png": "Atornillador ABSR 12 Compact",
+        "ABSR 20 COMBI_1.png": "Taladro Percutor ABSR 20 Combi",
+        "AWSR 20 COMPACT_1.png": "Llave de Impacto AWSR 20"
+    }
+
     if os.path.exists(p):
-        prods = sorted([f for f in os.listdir(p) if f.lower().endswith('.png')])
-        if prods:
-            sel = st.selectbox("Catálogo de productos:", prods)
+        archivos = sorted([f for f in os.listdir(p) if f.lower().endswith('.png')])
+        
+        if archivos:
+            # Creamos una función para que el selectbox sepa qué mostrar
+            # Si el archivo no está en el diccionario, mostrará el nombre del archivo por defecto
+            def mostrar_nombre(archivo):
+                return nombres_reales.get(archivo, archivo)
+
+            # Usamos el parámetro 'format_func' para cambiar lo que ve el usuario
+            sel = st.selectbox(
+                "Seleccionar producto:", 
+                archivos, 
+                format_func=mostrar_nombre
+            )
+
             ci, cs = st.columns(2)
             with ci:
                 st.image(os.path.join(p, sel), width=280)
             with cs:
+                # Aquí también puedes usar mostrar_nombre(sel) si quieres que el nombre salga en texto
+                st.write(f"**Producto:** {mostrar_nombre(sel)}")
                 st.write(f"**Puntos disponibles:** {st.session_state.bolsa_puntos}%")
+                
                 dto = st.slider("Asignar descuento (%)", 0, 30, value=min(st.session_state.bolsa_puntos, 30))
+                
                 if st.button("AÑADIR AL PEDIDO", use_container_width=True):
                     if st.session_state.bolsa_puntos >= dto:
-                        st.session_state.carrito.append({"prod": sel, "dto": dto})
+                        # Guardamos el nombre real en el carrito para que el pedido se vea bien
+                        st.session_state.carrito.append({
+                            "prod": mostrar_nombre(sel), 
+                            "dto": dto
+                        })
                         st.session_state.bolsa_puntos -= dto
                         st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
