@@ -18,36 +18,34 @@ def get_random_bg():
     fondos = [f for f in os.listdir(current_bg_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
     return os.path.join(current_bg_dir, random.choice(fondos)) if fondos else None
 
-# --- CARGA DE PRECIOS (ARCHIVO XLSX SIMPLIFICADO) ---
+# --- CARGA DE PRECIOS (EXCEL XLSX) ---
 @st.cache_data
 def load_prices():
-    # Ajustado para leer el archivo Excel .xlsx
+    # Nombre exacto del archivo excel simplificado
     file_path = "Lista_Precios - CORDLESS MACHINES.xlsx"
-    if not os.path.exists(file_path):
-        st.error(f"Archivo no encontrado: {file_path}")
+    if os.path.exists(file_path):
+        # Usamos read_excel para el formato .xlsx
+        return pd.read_excel(file_path)
+    else:
+        # Fallback por si el nombre en el servidor tiene la extensión larga del csv anterior
+        file_path_alt = "Lista_Precios - CORDLESS MACHINES.xlsx - Hoja1.csv"
+        if os.path.exists(file_path_alt):
+            return pd.read_csv(file_path_alt)
         return pd.DataFrame(columns=['Producto', 'Precio'])
-    
-    # Leemos el Excel directamente
-    df = pd.read_excel(file_path)
-    return df
 
-def buscar_precio(nombre_app, df):
-    """Verifica coincidencia de palabras al 80% entre el catálogo y el excel"""
+def obtener_precio_flexible(nombre_buscado, df):
+    """Compara palabras y devuelve el precio si coinciden en un 80%"""
     if df.empty: return 0.0
+    palabras_buscadas = set(nombre_buscado.upper().split())
     
-    palabras_app = set(nombre_app.upper().replace('\n', ' ').split())
-    
-    for _, row in df.iterrows():
-        nombre_excel = str(row['Producto']).upper().replace('\n', ' ')
+    for _, fila in df.iterrows():
+        nombre_excel = str(fila['Producto']).upper()
         palabras_excel = nombre_excel.split()
-        
         if not palabras_excel: continue
         
-        coincidencias = [p for p in palabras_excel if p in palabras_app]
-        
-        # Si coinciden al menos el 80% de las palabras del nombre en el Excel
+        coincidencias = [p for p in palabras_excel if p in palabras_buscadas]
         if len(coincidencias) / len(palabras_excel) >= 0.8:
-            return float(row['Precio'])
+            return float(fila['Precio'])
     return 0.0
 
 # --- INICIALIZACIÓN DE ESTADOS ---
@@ -157,13 +155,13 @@ elif st.session_state.tab_actual == "CATÁLOGO":
             def mostrar_nombre(archivo): return nombres_reales.get(archivo, archivo)
             sel = st.selectbox("Producto:", archivos, format_func=mostrar_nombre)
             
-            # --- OBTENER PRECIO ---
-            precio_unit = buscar_precio(mostrar_nombre(sel), df_precios)
+            # --- NUEVA FUNCIÓN: MOSTRAR PRECIO ---
+            precio_unitario = obtener_precio_flexible(mostrar_nombre(sel), df_precios)
             
             ci, cs = st.columns(2)
             with ci: st.image(os.path.join(p, sel), width=280)
             with cs:
-                st.write(f"### Precio: ${precio_unit:,.2f}")
+                st.write(f"### Precio: ${precio_unitario:,.2f}")
                 num_en_carro = len(st.session_state.carrito)
                 if st.session_state.dto_base < 20:
                     st.error("Descuento 0%: Pase por la calculadora.")
@@ -179,7 +177,7 @@ elif st.session_state.tab_actual == "CATÁLOGO":
                 if st.button("AÑADIR AL PEDIDO", use_container_width=True):
                     st.session_state.carrito.append({
                         "prod": mostrar_nombre(sel), 
-                        "precio": precio_unit,
+                        "precio": precio_unitario,
                         "dto": 20
                     })
                     if len(st.session_state.carrito) >= 3:
@@ -192,11 +190,11 @@ elif st.session_state.tab_actual == "CATÁLOGO":
 elif st.session_state.tab_actual == "PEDIDO":
     st.markdown(f'<div class="card"><div class="card-title">Pedido: {st.session_state.nombre_cliente}</div>', unsafe_allow_html=True)
     if st.session_state.carrito:
-        total_acumulado = 0
+        total_pagar = 0
         for i, item in enumerate(st.session_state.carrito):
             ca, cb, cc, cd = st.columns([2.5, 1, 1, 0.5])
-            p_desc = item['precio'] * (1 - item['dto']/100)
-            total_acumulado += p_desc
+            p_con_dto = item['precio'] * (1 - item['dto']/100)
+            total_pagar += p_con_dto
             
             ca.write(f"**{i+1}.** {item['prod']}")
             cb.write(f"${item['precio']:,.2f}")
@@ -208,18 +206,19 @@ elif st.session_state.tab_actual == "PEDIDO":
                 st.rerun()
         
         st.divider()
-        st.markdown(f"## Total Final: ${total_acumulado:,.2f}")
+        # --- NUEVA FUNCIÓN: CÁLCULO FINAL ---
+        st.markdown(f"## Total Final: ${total_pagar:,.2f}")
         
-        # --- GENERACIÓN DE PDF ---
+        # --- NUEVA FUNCIÓN: GENERAR PDF ---
         def generar_pdf():
             pdf = FPDF()
             pdf.add_page()
             pdf.set_font("Arial", 'B', 16)
-            pdf.cell(0, 10, "RESUMEN DE VENTA - PLAN RECAMBIO", ln=True, align='C')
+            pdf.cell(0, 10, "DETALLE DE VENTA - PLAN RECAMBIO", ln=True, align='C')
             pdf.ln(10)
             pdf.set_font("Arial", '', 12)
             pdf.cell(0, 10, f"Cliente: {st.session_state.nombre_cliente}", ln=True)
-            pdf.cell(0, 10, f"Nro. Cliente: {st.session_state.numero_cliente}", ln=True)
+            pdf.cell(0, 10, f"Nro Cliente: {st.session_state.numero_cliente}", ln=True)
             pdf.ln(5)
             
             pdf.set_font("Arial", 'B', 10)
@@ -238,14 +237,14 @@ elif st.session_state.tab_actual == "PEDIDO":
             
             pdf.ln(5)
             pdf.set_font("Arial", 'B', 12)
-            pdf.cell(190, 10, f"TOTAL FINAL: ${total_acumulado:,.2f}", ln=True, align='R')
+            pdf.cell(190, 10, f"TOTAL A PAGAR: ${total_pagar:,.2f}", ln=True, align='R')
             return pdf.output(dest='S').encode('latin-1')
 
         pdf_bytes = generar_pdf()
         st.download_button(
             label="📄 DESCARGAR DETALLE EN PDF",
             data=pdf_bytes,
-            file_name=f"Pedido_{st.session_state.nombre_cliente}.pdf",
+            file_name=f"Venta_{st.session_state.nombre_cliente}.pdf",
             mime="application/pdf",
             use_container_width=True
         )
