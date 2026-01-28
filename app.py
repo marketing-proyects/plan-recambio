@@ -28,10 +28,10 @@ def load_prices():
     try:
         df = pd.read_excel(file_path, sheet_name="Hoja1")
         df.columns = [c.strip() for c in df.columns]
-        # Limpieza de espacios en blanco en la columna Imagen
+        # Limpieza de espacios para evitar fallos de coincidencia
         df['Imagen'] = df['Imagen'].astype(str).str.strip()
-        # Solo requerimos Producto, Imagen y Precio para mostrarlo
-        df = df.dropna(subset=["Producto", "Imagen", "Precio"])
+        columnas_req = ["Producto", "Imagen", "Código", "Precio"]
+        df = df.dropna(subset=columnas_req)
         return df
     except Exception as e:
         st.error(f"Error cargando Excel: {e}")
@@ -58,11 +58,16 @@ f_bold = get_base64("WuerthBold.ttf")
 st.markdown(f"""
     <style>
     @font-face {{ font-family: 'WuerthBold'; src: url('data:font/ttf;base64,{f_bold}'); }}
+    
+    /* OCULTAR ICONOS DE ENLACE / CLIP / ANCHORS */
     .element-container:has(h1) a, .element-container:has(h2) a, .element-container:has(h3) a, 
     .element-container:has(h4) a, .element-container:has(h5) a, .element-container:has(h6) a,
-    [data-testid="stHeaderActionElements"] {{ display: none !important; }}
+    [data-testid="stHeaderActionElements"] {{
+        display: none !important;
+    }}
     header {{ visibility: hidden; }}
     button[title="View fullscreen"] {{ visibility: hidden; }}
+    
     .stApp {{ background: none; }}
     .bg-layer {{
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -130,6 +135,7 @@ elif st.session_state.tab_actual == "CATÁLOGO":
     st.markdown('<div class="card"><div class="card-title">Seleccionar Máquina Nueva</div>', unsafe_allow_html=True)
     p = "assets/productos"
     
+    # Nombres sincronizados 100% con tu Excel
     nombres_reales = {
         "ABSR 12 COMPACT_2.png": "Taladro Destornillador ABS Compacto",
         "ABSR 20 COMBI_1.png": "Taladro Atornillador ABSR 20 Combinado",
@@ -175,17 +181,13 @@ elif st.session_state.tab_actual == "CATÁLOGO":
                         st.info(f"Faltan {max(0, faltantes_30)} unidad(es) para el 30%.")
 
                     if st.button("AÑADIR AL PEDIDO", use_container_width=True):
-                        st.session_state.carrito.append({
-                            "prod": nombre_visible, 
-                            "precio": precio_lista,
-                            "dto": dto_item if dto_item > 0 else 20
-                        })
+                        st.session_state.carrito.append({"prod": nombre_visible, "precio": precio_lista, "dto": dto_item})
                         if len(st.session_state.carrito) >= 3:
                             for it in st.session_state.carrito: it['dto'] = 30
                         st.toast(f"✅ {nombre_visible} añadido")
                         st.rerun()
             else:
-                st.warning("No hay productos que coincidan entre las fotos y el Excel.")
+                st.warning("No se encontraron coincidencias. Revisa los nombres en el Excel.")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --- PESTAÑA 3: PEDIDO ---
@@ -197,7 +199,6 @@ elif st.session_state.tab_actual == "PEDIDO":
             ca, cb, cc, cd = st.columns([2.5, 1, 1, 0.5])
             subtotal = item['precio'] * (1 - item['dto']/100)
             total_acumulado += subtotal
-            
             ca.write(f"**{i+1}.** {item['prod']}")
             cb.write(f"${item['precio']:,.2f}")
             cc.write(f"**-{item['dto']}%**")
@@ -214,26 +215,20 @@ elif st.session_state.tab_actual == "PEDIDO":
             pdf = FPDF()
             pdf.set_auto_page_break(auto=False)
             pdf.add_page()
-            
-            if os.path.exists("logo_wurth.jpg"):
-                pdf.image("logo_wurth.jpg", x=160, y=10, w=35)
-            
+            if os.path.exists("logo_wurth.jpg"): pdf.image("logo_wurth.jpg", x=160, y=10, w=35)
             pdf.set_font("Arial", 'B', 16)
             pdf.cell(0, 10, "RESUMEN DE VENTA - PLAN RECAMBIO", ln=True, align='L')
             pdf.ln(10)
-            
             pdf.set_font("Arial", '', 12)
             pdf.cell(0, 8, f"Cliente: {st.session_state.nombre_cliente}", ln=True)
             pdf.cell(0, 8, f"Nro. Cliente: {st.session_state.numero_cliente}", ln=True)
             pdf.cell(0, 8, f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True)
             pdf.ln(5)
-            
             pdf.set_font("Arial", 'B', 10)
             pdf.cell(100, 10, "Producto", 1, 0, 'C')
             pdf.cell(30, 10, "P. Lista", 1, 0, 'C')
             pdf.cell(20, 10, "Dto", 1, 0, 'C')
             pdf.cell(40, 10, "Subtotal", 1, 1, 'C')
-            
             pdf.set_font("Arial", '', 9)
             for it in st.session_state.carrito:
                 sb = it['precio'] * (1 - it['dto']/100)
@@ -241,25 +236,16 @@ elif st.session_state.tab_actual == "PEDIDO":
                 pdf.cell(30, 10, f"${it['precio']:,.2f}", 1, 0, 'R')
                 pdf.cell(20, 10, f"{it['dto']}%", 1, 0, 'C')
                 pdf.cell(40, 10, f"${sb:,.2f}", 1, 1, 'R')
-            
             pdf.ln(5)
             pdf.set_font("Arial", 'B', 12)
             pdf.cell(190, 10, f"TOTAL: ${total_acumulado:,.2f}", ln=True, align='R')
-            
             pdf.set_y(270)
             pdf.set_font("Arial", 'I', 8)
             pdf.cell(0, 10, "Documento no oficial - Solo para fines informativos", 0, 0, 'C')
-            
             return pdf.output(dest='S').encode('latin-1')
 
         pdf_bytes = generate_pdf()
-        st.download_button(
-            label="📥 DESCARGAR DETALLE EN PDF",
-            data=pdf_bytes,
-            file_name=f"Venta_{st.session_state.nombre_cliente}.pdf",
-            mime="application/pdf",
-            use_container_width=True
-        )
+        st.download_button(label="📥 DESCARGAR PDF", data=pdf_bytes, file_name=f"Venta_{st.session_state.nombre_cliente}.pdf", mime="application/pdf", use_container_width=True)
     else:
         st.info("El pedido está vacío.")
     st.markdown('</div>', unsafe_allow_html=True)
