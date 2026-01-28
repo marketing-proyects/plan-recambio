@@ -1,8 +1,8 @@
 import streamlit as st
-import pandas as pd
 import base64
 import os
 import random
+import pandas as pd
 import re
 
 # --- SOPORTE DE ARCHIVOS ---
@@ -18,24 +18,28 @@ def get_random_bg():
     fondos = [f for f in os.listdir(current_bg_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
     return os.path.join(current_bg_dir, random.choice(fondos)) if fondos else None
 
-# --- LÓGICA DE DATOS (NUEVA) ---
+# --- LÓGICA DE DATOS (EXCEL) ---
 @st.cache_data
 def cargar_datos_csv():
     file_path = "Lista_Precios - CORDLESS MACHINES.xlsx - Hoja1.csv"
     if not os.path.exists(file_path): return None
     try:
+        # skiprows=1 porque la primera fila del CSV es "Power Tools"
         df = pd.read_csv(file_path, skiprows=1)
         df.columns = [c.strip() for c in df.columns]
-        df['Producto_Limpio'] = df['Producto'].str.replace('\n', ' ', regex=True).str.strip()
         return df
     except: return None
 
-def buscar_precio_y_info(nombre_app, df):
+def buscar_info_excel(nombre_app, df):
     if df is None: return None
+    # Lógica del 80% de coincidencia de palabras
     palabras_app = set(re.findall(r'\w+', nombre_app.lower()))
     for _, row in df.iterrows():
-        palabras_csv = set(re.findall(r'\w+', str(row['Producto_Limpio']).lower()))
-        if len(palabras_app.intersection(palabras_csv)) / len(palabras_app) >= 0.7:
+        nombre_csv = str(row['Producto']).replace('\n', ' ').lower()
+        palabras_csv = set(re.findall(r'\w+', nombre_csv))
+        if not palabras_app: continue
+        coincidencia = len(palabras_app.intersection(palabras_csv)) / len(palabras_app)
+        if coincidencia >= 0.8:
             return row
     return None
 
@@ -52,25 +56,48 @@ df_precios = cargar_datos_csv()
 red_stripe_base64 = get_base64("favicon.png") 
 st.set_page_config(page_title="Würth Plan Recambio", page_icon=f"data:image/png;base64,{red_stripe_base64}", layout="centered")
 
-# --- ESTILOS (TU CSS ORIGINAL) ---
+# --- ESTILOS (IGUAL A TU ORIGINAL) ---
 bg_file = get_random_bg()
 bg_base64 = get_base64(bg_file)
 font_base64 = get_base64("assets/fonts/WuerthBold.ttf")
 
 st.markdown(f"""
 <style>
-    @font-face {{ font-family: 'WuerthBold'; src: url('data:font/ttf;base64,{font_base64}'); }}
-    .stApp {{ background: url("data:image/png;base64,{bg_base64}") no-repeat center center fixed; background-size: cover; }}
-    .card {{ background-color: rgba(255, 255, 255, 0.9); padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); margin-bottom: 20px; }}
-    .card-title {{ font-family: 'WuerthBold', sans-serif; color: #CC0000; font-size: 20px; margin-bottom: 10px; }}
+    @font-face {{
+        font-family: 'WuerthBold';
+        src: url('data:font/ttf;base64,{font_base64}');
+    }}
+    .stApp {{
+        background: url("data:image/png;base64,{bg_base64}") no-repeat center center fixed;
+        background-size: cover;
+    }}
+    .card {{
+        background-color: rgba(255, 255, 255, 0.9);
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        margin-bottom: 20px;
+    }}
+    .card-title {{
+        font-family: 'WuerthBold', sans-serif;
+        color: #CC0000;
+        font-size: 20px;
+        margin-bottom: 10px;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
 # --- NAVEGACIÓN ---
 col1, col2, col3 = st.columns(3)
-if col1.button("CALCULADORA", use_container_width=True): st.session_state.tab_actual = "CALCULADORA"; st.rerun()
-if col2.button("CATÁLOGO", use_container_width=True): st.session_state.tab_actual = "CATÁLOGO"; st.rerun()
-if col3.button("PEDIDO", use_container_width=True): st.session_state.tab_actual = "PEDIDO"; st.rerun()
+if col1.button("CALCULADORA", use_container_width=True):
+    st.session_state.tab_actual = "CALCULADORA"
+    st.rerun()
+if col2.button("CATÁLOGO", use_container_width=True):
+    st.session_state.tab_actual = "CATÁLOGO"
+    st.rerun()
+if col3.button("PEDIDO", use_container_width=True):
+    st.session_state.tab_actual = "PEDIDO"
+    st.rerun()
 
 # --- PESTAÑA 1: CALCULADORA ---
 if st.session_state.tab_actual == "CALCULADORA":
@@ -83,6 +110,7 @@ if st.session_state.tab_actual == "CALCULADORA":
     c1 = st.checkbox("Herramienta de la competencia")
     c2 = st.checkbox("Herramienta Würth antigua (fuera de garantía)")
     c3 = st.checkbox("Plan fidelización / Crecimiento de parque")
+    
     if c1 or c2 or c3:
         st.session_state.dto_base = 20
         st.success("CALIFICA PARA EL PLAN RECAMBIO (20% Base)")
@@ -113,30 +141,36 @@ elif st.session_state.tab_actual == "CATÁLOGO":
             def mostrar_nombre(f): return nombres_reales.get(f, f)
             sel = st.selectbox("Equipo:", files, format_func=mostrar_nombre)
             
-            # --- INTEGRACIÓN DE PRECIO Y CARACTERÍSTICAS ---
-            info = buscar_precio_y_info(mostrar_nombre(sel), df_precios)
-            
-            col_img, col_txt = st.columns([1, 1])
+            # Buscamos la info del Excel
+            nombre_seleccionado = mostrar_nombre(sel)
+            info = buscar_info_excel(nombre_seleccionado, df_precios)
+
+            col_img, col_info = st.columns([1, 1])
             with col_img:
                 st.image(os.path.join(path_prod, sel), use_container_width=True)
             
-            with col_txt:
+            with col_info:
+                # MOSTRAMOS EL PRECIO Y EL (+)
                 if info is not None:
                     st.markdown(f"### Precio: **${float(info['Precio']):,.2f}**")
-                    with st.expander("➕ Ver características"):
+                    with st.expander("➕ Características técnicas"):
                         st.write(f"**Voltaje:** {info.get('Voltaje', 'N/A')}")
                         st.write(f"**Potencia:** {info.get('Potencia', 'N/A')}")
                         st.caption(str(info.get('Características', '')).replace('\n', ' '))
                 else:
-                    st.info("Precio no disponible.")
+                    st.info("Precio no disponible en Excel.")
 
                 if st.button("AÑADIR AL PEDIDO", use_container_width=True):
                     if st.session_state.dto_base >= 20:
-                        p_val = float(info['Precio']) if info is not None else 0
-                        st.session_state.carrito.append({"prod": mostrar_nombre(sel), "precio": p_val, "dto": 20})
+                        precio_unitario = float(info['Precio']) if info is not None else 0
+                        st.session_state.carrito.append({
+                            "prod": nombre_seleccionado, 
+                            "precio": precio_unitario,
+                            "dto": 20
+                        })
                         if len(st.session_state.carrito) >= 3:
                             for it in st.session_state.carrito: it['dto'] = 30
-                        st.toast(f"✅ {mostrar_nombre(sel)} añadido")
+                        st.toast(f"✅ {nombre_seleccionado} añadido")
                         st.rerun()
                     else:
                         st.error("No califica para el plan.")
@@ -149,17 +183,18 @@ elif st.session_state.tab_actual == "PEDIDO":
         total = 0
         for i, item in enumerate(st.session_state.carrito):
             ca, cb, cc = st.columns([3, 1, 1])
-            p_final = item.get('precio', 0) * (1 - item['dto']/100)
-            total += p_final
+            precio_con_dto = item.get('precio', 0) * (1 - item['dto']/100)
+            total += precio_con_dto
+            
             ca.write(f"**{i+1}.** {item['prod']}")
-            cb.write(f"**-{item['dto']}%** (${p_final:,.2f})")
+            cb.write(f"**-{item['dto']}%** (${precio_con_dto:,.2f})")
             if cc.button("Quitar", key=f"del_{i}"):
                 st.session_state.carrito.pop(i)
                 if len(st.session_state.carrito) < 3:
                     for it in st.session_state.carrito: it['dto'] = 20
                 st.rerun()
         st.divider()
-        st.markdown(f"### TOTAL: ${total:,.2f}")
+        st.write(f"### TOTAL: ${total:,.2f}")
     else:
         st.info("Carrito vacío.")
     st.markdown('</div>', unsafe_allow_html=True)
