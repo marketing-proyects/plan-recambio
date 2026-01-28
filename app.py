@@ -4,6 +4,7 @@ import os
 import random
 import pandas as pd
 from fpdf import FPDF
+from io import BytesIO
 
 # --- SOPORTE DE ARCHIVOS ---
 def get_base64(file_path):
@@ -18,36 +19,51 @@ def get_random_bg():
     fondos = [f for f in os.listdir(current_bg_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
     return os.path.join(current_bg_dir, random.choice(fondos)) if fondos else None
 
-# --- CARGA DE PRECIOS (EXCEL XLSX) ---
+# --- CARGA DE DATOS DESDE EXCEL ---
 @st.cache_data
 def load_prices():
-    file_path = "Lista_Precios - CORDLESS MACHINES.xlsx"
-    if os.path.exists(file_path):
-        # Leemos el archivo Excel
-        df = pd.read_excel(file_path)
-        # Limpiamos nombres para facilitar la comparación
-        df['Producto_Limpio'] = df['Producto'].str.replace('\n', ' ').str.strip()
+    file_path = "Lista_Precios.xlsx"
+    if not os.path.exists(file_path):
+        # Fallback en caso de que el nombre aún no se haya actualizado en el servidor
+        file_path = "Lista_Precios - CORDLESS MACHINES.xlsx"
+        if not os.path.exists(file_path):
+            return pd.DataFrame()
+    
+    try:
+        # Leemos la Hoja1 como indicaste
+        df = pd.read_excel(file_path, sheet_name="Hoja1")
+        # Normalizamos nombres de columnas (quitar espacios)
+        df.columns = [c.strip() for c in df.columns]
         return df
-    else:
-        st.error(f"No se encontró el archivo: {file_path}")
-        return pd.DataFrame(columns=['Producto', 'Precio', 'Producto_Limpio'])
+    except Exception as e:
+        st.error(f"Error al cargar el Excel: {e}")
+        return pd.DataFrame()
 
-def buscar_precio_flexible(nombre_app, df):
-    """Constata coincidencia de palabras al 80% entre la app y el excel"""
-    if df.empty: return 0.0
+def obtener_precio(nombre_app, df_precios):
+    """Lógica de coincidencia del 80% de palabras"""
+    if df_precios.empty:
+        return 0.0
+    
     palabras_app = set(nombre_app.upper().split())
     
-    for _, row in df.iterrows():
-        nombre_excel = str(row['Producto_Limpio']).upper()
+    for _, row in df_precios.iterrows():
+        nombre_excel = str(row['Producto']).upper()
         palabras_excel = nombre_excel.split()
+        
         if not palabras_excel: continue
         
-        coincidencias = [p for p in palabras_excel if p in palabras_app]
+        # Contamos cuántas palabras del excel están en el nombre de la app
+        coincidencias = [w for w in palabras_excel if w in palabras_app]
+        
         if len(coincidencias) / len(palabras_excel) >= 0.8:
-            return float(row['Precio'])
+            # Buscamos la columna 'Precios' (como indicaste) o 'Precio'
+            if 'Precios' in row:
+                return float(row['Precios'])
+            elif 'Precio' in row:
+                return float(row['Precio'])
     return 0.0
 
-# --- INICIALIZACIÓN DE ESTADOS ---
+# --- INICIALIZACIÓN DE DATOS ---
 df_precios = load_prices()
 
 if 'carrito' not in st.session_state: st.session_state.carrito = []
@@ -136,16 +152,16 @@ elif st.session_state.tab_actual == "CATÁLOGO":
     st.markdown('<div class="card"><div class="card-title">Seleccionar Máquina Nueva</div>', unsafe_allow_html=True)
     p = "assets/productos"
     nombres_reales = {
-        "ABSR 12 COMPACT_2.png": "TALADRO ATORNILLADOR ABSR 12 COMPACT 12V / 2.0AH",
-        "ABSR 20 COMBI_1.png": "TALADRO ATORNILLADOR ABSR 20 COMBI 20 V / 2.0AH",
-        "ABSR 20 COMBI_2.png": "TALADRO ATORNILLADOR ABSR 20 COMPACT 20 V / 2.0AH",
-        "ABSR 20 PWR COMBI_1.png": "TALADRO PERCUTOR Y ATORNILLADOR ABSR 20 PWR COMBI 20 V / 4.0AH",
-        "AWSR 20 COMPACT_1.png": "AMOLADORA ANGULAR AWSR 20 COMPACT 18V / 2.0AH",
-        "ASSR 20_3.png": "ATORNILLADOR DE IMPACTO ASSR 20 20V / 4.0AH",                     
-        "ASSR 20 - 12 POWER_1.png": "LLAVE DE IMPACTO ASSR 20 - 1/2 COMPACT 20V / 4.0AH",
-        "ASSR 20 - 34_1.png": "LLAVE DE IMPACTO REDSTRIPE ASSR 20 - 3/4 20V / 8.0AH",
-        "ABHR 20 LIGHT_1.png": "ROTOMARTILLO ABHR 20 LIGHT 20V / 4.0AH",
-        "ABHR 20 POWER_1.png": "ROTOMARTILLO ABHR 20 POWER 18V / 5.0AH"
+        "ABSR 12 COMPACT_2.png": "Taladro Destornillador ABS Compacto",
+        "ABSR 20 COMBI_1.png": "Taladro Atornillador ABSR 20 Combinado",
+        "ABSR 20 COMBI_2.png": "Taladro Atornillador ABSR 20 Compact",
+        "ABSR 20 PWR COMBI_1.png": "Taladro Percutor y Atornillador ABSR 20 PWR Combi",
+        "AWSR 20 COMPACT_1.png": "Amoladora Angular AWS R 20 - 115 Compact",
+        "ASSR 20_3.png": "Atornillador de Impacto Master ASSR 20 14 inch Compact",                     
+        "ASSR 20 - 12 POWER_1.png": "LLave de Impacto sin carbones",
+        "ASSR 20 - 34_1.png": "LLave de Impacto 3/4",
+        "ABHR 20 LIGHT_1.png": "Rotomartillo Ligth",
+        "ABHR 20 POWER_1.png": "Rotomartillo Power"
     }
 
     if os.path.exists(p):
@@ -154,30 +170,34 @@ elif st.session_state.tab_actual == "CATÁLOGO":
             def mostrar_nombre(archivo): return nombres_reales.get(archivo, archivo)
             sel = st.selectbox("Producto:", archivos, format_func=mostrar_nombre)
             
-            # Obtener Precio
-            precio_val = buscar_precio_flexible(mostrar_nombre(sel), df_precios)
+            # Buscamos el precio en el Excel
+            precio_herramienta = obtener_precio(mostrar_nombre(sel), df_precios)
             
             ci, cs = st.columns(2)
             with ci: st.image(os.path.join(p, sel), width=280)
             with cs:
-                st.write(f"### Precio: ${precio_val:,.2f}")
+                # Mostrar el precio obtenido
+                st.markdown(f"### Precio: ${precio_herramienta:,.2f}")
+                
                 num_en_carro = len(st.session_state.carrito)
                 if st.session_state.dto_base < 20:
                     st.error("Descuento 0%: Pase por la calculadora.")
                     dto_item = 0
                 else:
-                    if num_en_carro >= 2:
-                        st.success("¡Beneficio 30% activado!")
+                    faltantes = 3 - num_en_carro
+                    if num_en_carro >= 2: # Al añadir este, serán 3
+                        st.success("¡Beneficio 30% activado en todo el pedido!")
                         dto_item = 30
                     else:
                         dto_item = 20
-                        st.info(f"Faltan {2 - num_en_carro} para el 30%.")
+                        st.info(f"Faltan {faltantes} unidad(es) para el 30%.")
 
                 if st.button("AÑADIR AL PEDIDO", use_container_width=True):
+                    # Guardamos precio en el item del carrito
                     st.session_state.carrito.append({
                         "prod": mostrar_nombre(sel), 
-                        "precio": precio_val,
-                        "dto": 20
+                        "dto": 20, 
+                        "precio_base": precio_herramienta
                     })
                     if len(st.session_state.carrito) >= 3:
                         for it in st.session_state.carrito: it['dto'] = 30
@@ -189,63 +209,74 @@ elif st.session_state.tab_actual == "CATÁLOGO":
 elif st.session_state.tab_actual == "PEDIDO":
     st.markdown(f'<div class="card"><div class="card-title">Pedido: {st.session_state.nombre_cliente}</div>', unsafe_allow_html=True)
     if st.session_state.carrito:
-        total_pedido = 0
+        monto_total = 0
         for i, item in enumerate(st.session_state.carrito):
-            ca, cb, cc, cd = st.columns([2.5, 1, 1, 0.5])
-            p_final = item['precio'] * (1 - item['dto']/100)
-            total_pedido += p_final
+            ca, cb, cc = st.columns([3, 1, 1])
             
-            ca.write(f"**{i+1}.** {item['prod']}")
-            cb.write(f"${item['precio']:,.2f}")
-            cc.write(f"**-{item['dto']}%**")
-            if cd.button("❌", key=f"del_{i}"):
+            # Cálculo de precio con descuento
+            precio_orig = item.get('precio_base', 0)
+            precio_final = precio_orig * (1 - item['dto'] / 100)
+            monto_total += precio_final
+            
+            ca.write(f"**{i+1}.** {item['prod']} (${precio_orig:,.2f})")
+            cb.write(f"**-{item['dto']}%**")
+            
+            if cc.button("Quitar", key=f"del_{i}"):
                 st.session_state.carrito.pop(i)
                 if len(st.session_state.carrito) < 3:
                     for it in st.session_state.carrito: it['dto'] = 20 if st.session_state.dto_base >= 20 else 0
                 st.rerun()
         
         st.divider()
-        st.markdown(f"## TOTAL FINAL: ${total_pedido:,.2f}")
+        st.markdown(f"### Monto Total Final: ${monto_total:,.2f}")
         
         # --- GENERACIÓN DE PDF ---
-        def generar_pdf():
+        def generate_pdf():
             pdf = FPDF()
             pdf.add_page()
             pdf.set_font("Arial", 'B', 16)
-            pdf.cell(0, 10, "DETALLE DE VENTA - PLAN RECAMBIO", ln=True, align='C')
+            pdf.cell(200, 10, txt="RESUMEN DE VENTA - PLAN RECAMBIO", ln=True, align='C')
             pdf.ln(10)
+            
             pdf.set_font("Arial", '', 12)
-            pdf.cell(0, 10, f"Cliente: {st.session_state.nombre_cliente}", ln=True)
-            pdf.cell(0, 10, f"Nro. Cliente: {st.session_state.numero_cliente}", ln=True)
+            pdf.cell(200, 10, txt=f"Cliente: {st.session_state.nombre_cliente}", ln=True)
+            pdf.cell(200, 10, txt=f"N° Cliente: {st.session_state.numero_cliente}", ln=True)
             pdf.ln(5)
             
-            pdf.set_font("Arial", 'B', 10)
+            pdf.set_font("Arial", 'B', 11)
             pdf.cell(100, 10, "Producto", 1)
-            pdf.cell(30, 10, "P. Lista", 1)
+            pdf.cell(30, 10, "Precio", 1)
             pdf.cell(20, 10, "Dto", 1)
-            pdf.cell(40, 10, "Subtotal", 1, ln=True)
+            pdf.cell(40, 10, "Total", 1)
+            pdf.ln()
             
-            pdf.set_font("Arial", '', 9)
+            pdf.set_font("Arial", '', 10)
             for it in st.session_state.carrito:
-                sub = it['precio'] * (1 - it['dto']/100)
-                pdf.cell(100, 10, it['prod'][:50], 1)
-                pdf.cell(30, 10, f"${it['precio']:,.2f}", 1)
+                p_base = it.get('precio_base', 0)
+                p_final = p_base * (1 - it['dto']/100)
+                pdf.cell(100, 10, it['prod'][:45], 1)
+                pdf.cell(30, 10, f"${p_base:,.2f}", 1)
                 pdf.cell(20, 10, f"{it['dto']}%", 1)
-                pdf.cell(40, 10, f"${sub:,.2f}", 1, ln=True)
+                pdf.cell(40, 10, f"${p_final:,.2f}", 1)
+                pdf.ln()
             
             pdf.ln(5)
             pdf.set_font("Arial", 'B', 12)
-            pdf.cell(190, 10, f"TOTAL FINAL A PAGAR: ${total_pedido:,.2f}", ln=True, align='R')
+            pdf.cell(200, 10, txt=f"MONTO TOTAL A PAGAR: ${monto_total:,.2f}", ln=True, align='R')
+            
             return pdf.output(dest='S').encode('latin-1')
 
-        pdf_bytes = generar_pdf()
-        st.download_button(
-            label="📄 DESCARGAR DETALLE EN PDF",
-            data=pdf_bytes,
-            file_name=f"Venta_{st.session_state.nombre_cliente}.pdf",
-            mime="application/pdf",
-            use_container_width=True
-        )
+        # Botón de descarga
+        if st.button("📥 DESCARGAR DETALLE EN PDF", use_container_width=True):
+            pdf_data = generate_pdf()
+            st.download_button(
+                label="Confirmar Descarga",
+                data=pdf_data,
+                file_name=f"Pedido_{st.session_state.nombre_cliente}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+            
     else:
         st.info("El pedido está vacío.")
     st.markdown('</div>', unsafe_allow_html=True)
