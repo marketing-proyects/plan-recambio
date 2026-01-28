@@ -57,14 +57,12 @@ st.markdown(f"""
     <style>
     @font-face {{ font-family: 'WuerthBold'; src: url('data:font/ttf;base64,{f_bold}'); }}
     
-    /* OCULTAR ICONOS DE ENLACE / CLIP / ANCHORS */
     .element-container:has(h1) a, .element-container:has(h2) a, .element-container:has(h3) a, 
     .element-container:has(h4) a, .element-container:has(h5) a, .element-container:has(h6) a,
     [data-testid="stHeaderActionElements"] {{
         display: none !important;
     }}
     header {{ visibility: hidden; }}
-    
     button[title="View fullscreen"] {{ visibility: hidden; }}
     
     .stApp {{ background: none; }}
@@ -174,7 +172,6 @@ elif st.session_state.tab_actual == "CATÁLOGO":
                         st.error("Descuento 0%: Pase por la calculadora.")
                         dto_item = 0
                     else:
-                        # REGLA CORREGIDA: Se activa con 3 unidades cargadas (carrito tiene 0, 1 o 2)
                         faltantes_30 = 3 - num_en_carro
                         if num_en_carro >= 3:
                             st.success("¡Beneficio 30% activado!")
@@ -187,7 +184,7 @@ elif st.session_state.tab_actual == "CATÁLOGO":
                         st.session_state.carrito.append({
                             "prod": nombre_visible, 
                             "precio": precio_lista,
-                            "dto": 20
+                            "dto": dto_item if dto_item > 0 else 20
                         })
                         if len(st.session_state.carrito) >= 3:
                             for it in st.session_state.carrito: it['dto'] = 30
@@ -221,6 +218,7 @@ elif st.session_state.tab_actual == "PEDIDO":
         
         def generate_pdf():
             pdf = FPDF()
+            pdf.set_auto_page_break(auto=True, margin=15)
             pdf.add_page()
             
             # Logo Würth arriba a la derecha
@@ -232,31 +230,31 @@ elif st.session_state.tab_actual == "PEDIDO":
             pdf.ln(10)
             
             pdf.set_font("Arial", '', 12)
-            pdf.cell(0, 10, f"Cliente: {st.session_state.nombre_cliente}", ln=True)
-            pdf.cell(0, 10, f"Nro. Cliente: {st.session_state.numero_cliente}", ln=True)
-            pdf.cell(0, 10, f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True)
+            pdf.cell(0, 8, f"Cliente: {st.session_state.nombre_cliente}", ln=True)
+            pdf.cell(0, 8, f"Nro. Cliente: {st.session_state.numero_cliente}", ln=True)
+            pdf.cell(0, 8, f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True)
             pdf.ln(5)
             
             pdf.set_font("Arial", 'B', 10)
-            pdf.cell(100, 10, "Producto", 1)
-            pdf.cell(30, 10, "P. Lista", 1)
-            pdf.cell(20, 10, "Dto", 1)
-            pdf.cell(40, 10, "Subtotal", 1, ln=True)
+            pdf.cell(100, 10, "Producto", 1, 0, 'C')
+            pdf.cell(30, 10, "P. Lista", 1, 0, 'C')
+            pdf.cell(20, 10, "Dto", 1, 0, 'C')
+            pdf.cell(40, 10, "Subtotal", 1, 1, 'C')
             
             pdf.set_font("Arial", '', 9)
             for it in st.session_state.carrito:
                 sb = it['precio'] * (1 - it['dto']/100)
                 pdf.cell(100, 10, it['prod'][:55], 1)
-                pdf.cell(30, 10, f"${it['precio']:,.2f}", 1)
-                pdf.cell(20, 10, f"{it['dto']}%", 1)
-                pdf.cell(40, 10, f"${sb:,.2f}", 1, ln=True)
+                pdf.cell(30, 10, f"${it['precio']:,.2f}", 1, 0, 'R')
+                pdf.cell(20, 10, f"{it['dto']}%", 1, 0, 'C')
+                pdf.cell(40, 10, f"${sb:,.2f}", 1, 1, 'R')
             
             pdf.ln(5)
             pdf.set_font("Arial", 'B', 12)
             pdf.cell(190, 10, f"TOTAL: ${total_acumulado:,.2f}", ln=True, align='R')
             
-            # Nota al pie: Documento no oficial
-            pdf.set_y(-20)
+            # Nota al pie en la misma página (posicionamiento manual seguro)
+            pdf.ln(20)
             pdf.set_font("Arial", 'I', 8)
             pdf.cell(0, 10, "Documento no oficial - Solo para fines informativos", 0, 0, 'C')
             
