@@ -5,7 +5,6 @@ import random
 import pandas as pd
 import re
 
-# --- SOPORTE DE ARCHIVOS ---
 def get_base64(file_path):
     if os.path.exists(file_path):
         with open(file_path, "rb") as f:
@@ -18,13 +17,11 @@ def get_random_bg():
     fondos = [f for f in os.listdir(current_bg_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
     return os.path.join(current_bg_dir, random.choice(fondos)) if fondos else None
 
-# --- LÓGICA DE DATOS EXCEL (SOLO PARA CATÁLOGO) ---
 @st.cache_data
 def cargar_datos_csv():
     file_path = "Lista_Precios - CORDLESS MACHINES.xlsx - Hoja1.csv"
     if os.path.exists(file_path):
         try:
-            # skiprows=1 porque la primera fila es "Power Tools"
             df = pd.read_csv(file_path, skiprows=1)
             df.columns = [c.strip() for c in df.columns]
             return df
@@ -34,30 +31,26 @@ def cargar_datos_csv():
 def buscar_producto_excel(nombre_app, df):
     if df is None: return None
     palabras_app = set(re.findall(r'\w+', nombre_app.lower()))
-    if not palabras_app: return None
     mejor_match = None
     max_score = 0
     for _, row in df.iterrows():
         nombre_csv = str(row['Producto']).replace('\n', ' ').lower()
         palabras_csv = set(re.findall(r'\w+', nombre_csv))
         interseccion = palabras_app.intersection(palabras_csv)
-        score = len(interseccion) / len(palabras_app)
+        score = len(interseccion) / len(palabras_app) if palabras_app else 0
         if score > max_score:
             max_score = score
             mejor_match = row
     return mejor_match if max_score >= 0.8 else None
 
-# --- INICIALIZACIÓN DE ESTADOS ---
 if 'carrito' not in st.session_state: st.session_state.carrito = []
 if 'dto_base' not in st.session_state: st.session_state.dto_base = 0
 if 'nombre_cliente' not in st.session_state: st.session_state.nombre_cliente = ""
 if 'numero_cliente' not in st.session_state: st.session_state.numero_cliente = ""
 if 'tab_actual' not in st.session_state: st.session_state.tab_actual = "CALCULADORA"
 
-# Cargamos el excel una sola vez
 df_precios = cargar_datos_csv()
 
-# --- CONFIGURACIÓN DE PÁGINA ---
 red_stripe_base64 = get_base64("favicon.png") 
 st.set_page_config(page_title="Würth Plan Recambio", page_icon=f"data:image/png;base64,{red_stripe_base64}", layout="centered")
 
@@ -65,7 +58,6 @@ fondo_path = get_random_bg()
 logo_base64 = get_base64("logo_wurth.jpg")
 f_bold = get_base64("WuerthBold.ttf")
 
-# --- CSS ORIGINAL ---
 st.markdown(f"""
     <style>
     @font-face {{ font-family: 'WuerthBold'; src: url('data:font/ttf;base64,{f_bold}'); }}
@@ -85,7 +77,6 @@ st.markdown(f"""
     <div class="bg-layer"></div>
     """, unsafe_allow_html=True)
 
-# --- CABECERA ---
 st.markdown(f"""
     <div style="display: flex; background-color: white; height: 130px; border-radius: 12px; overflow: hidden; margin-bottom: 20px;">
         <div style="width: 200px; display: flex; align-items: center; justify-content: center;"><img src="data:image/jpeg;base64,{logo_base64}" width="120"></div>
@@ -93,19 +84,16 @@ st.markdown(f"""
     </div>
     """, unsafe_allow_html=True)
 
-# --- DATOS CLIENTE ---
 col_n, col_v = st.columns([1.5, 1])
 with col_n: st.session_state.nombre_cliente = st.text_input("NOMBRE DEL CLIENTE", value=st.session_state.nombre_cliente)
 with col_v: st.session_state.numero_cliente = st.text_input("N° CLIENTE", value=st.session_state.numero_cliente)
 
-# --- NAVEGACIÓN ---
 c1, c2, c3 = st.columns(3)
 if c1.button("📊 CALCULADORA", use_container_width=True): st.session_state.tab_actual = "CALCULADORA"
 if c2.button("🛠️ CATÁLOGO", use_container_width=True): st.session_state.tab_actual = "CATÁLOGO"
 if c3.button("🛒 PEDIDO", use_container_width=True): st.session_state.tab_actual = "PEDIDO"
 st.divider()
 
-# --- PESTAÑA 1: CALCULADORA ---
 if st.session_state.tab_actual == "CALCULADORA":
     st.markdown('<div class="card"><div class="card-title">Ingresar entregas del cliente</div>', unsafe_allow_html=True)
     ca, cb = st.columns([1.2, 0.8])
@@ -132,7 +120,6 @@ if st.session_state.tab_actual == "CALCULADORA":
             st.button("MÍNIMO 20% REQUERIDO", use_container_width=True, disabled=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- PESTAÑA 2: CATÁLOGO (AQUÍ ESTÁN LOS CAMBIOS) ---
 elif st.session_state.tab_actual == "CATÁLOGO":
     st.markdown('<div class="card"><div class="card-title">Seleccionar Máquina Nueva</div>', unsafe_allow_html=True)
     p = "assets/productos"
@@ -154,42 +141,31 @@ elif st.session_state.tab_actual == "CATÁLOGO":
         if archivos:
             def mostrar_nombre(archivo): return nombres_reales.get(archivo, archivo)
             sel = st.selectbox("Producto:", archivos, format_func=mostrar_nombre)
-            
-            # Buscamos en el excel el producto seleccionado
             info_excel = buscar_producto_excel(mostrar_nombre(sel), df_precios)
             
             ci, cs = st.columns(2)
             with ci: 
                 st.image(os.path.join(p, sel), width=280)
-                # MOSTRAR PRECIO DEBAJO DE LA IMAGEN
                 if info_excel is not None:
-                    try:
-                        precio_num = float(info_excel['Precio'])
-                        st.markdown(f"<h2 style='color: #CC0000; font-family: \"WuerthBold\";'>${precio_num:,.2f}</h2>", unsafe_allow_html=True)
-                    except:
-                        st.markdown(f"<h2 style='color: #CC0000; font-family: \"WuerthBold\";'>${info_excel['Precio']}</h2>", unsafe_allow_html=True)
+                    precio_f = float(info_excel['Precio'])
+                    st.markdown(f"""<h2 style='color: #CC0000; font-family: "WuerthBold"; margin-top: 10px;'>${precio_f:,.2f}</h2>""", unsafe_allow_html=True)
             
             with cs:
-                # EXPANDER (+) PARA CARACTERÍSTICAS
                 if info_excel is not None:
                     with st.expander("(+) Características técnicas"):
                         st.write(f"**Voltaje:** {info_excel.get('Voltaje', 'N/A')}")
                         st.write(f"**Potencia:** {info_excel.get('Potencia', 'N/A')}")
                         detalles = str(info_excel.get('Características', 'N/A')).replace('\n', ' ')
-                        st.caption(detalles)
+                        st.write(f"**Detalle:** {detalles}")
 
-                num_en_carro = len(st.session_state.carrito)
                 if st.session_state.dto_base < 20:
                     st.error("Descuento 0%: Pase por la calculadora.")
-                    dto_item = 0
                 else:
-                    faltantes = 3 - num_en_carro
+                    num_en_carro = len(st.session_state.carrito)
                     if num_en_carro >= 3:
                         st.success("¡Beneficio 30% activado!")
-                        dto_item = 30
                     else:
-                        dto_item = 20
-                        st.info(f"Faltan {faltantes} para el 30%.")
+                        st.info(f"Faltan {3-num_en_carro} para el 30%.")
 
                 if st.button("AÑADIR AL PEDIDO", use_container_width=True):
                     st.session_state.carrito.append({"prod": mostrar_nombre(sel), "dto": 20})
@@ -197,9 +173,9 @@ elif st.session_state.tab_actual == "CATÁLOGO":
                         for it in st.session_state.carrito: it['dto'] = 30
                     st.toast(f"✅ {mostrar_nombre(sel)} añadido")
                     st.rerun()
+    st.markdown('<p style="font-size: 12px; color: gray;">Ofertas Metal - Madera</p>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- PESTAÑA 3: PEDIDO ---
 elif st.session_state.tab_actual == "PEDIDO":
     st.markdown(f'<div class="card"><div class="card-title">Pedido: {st.session_state.nombre_cliente}</div>', unsafe_allow_html=True)
     if st.session_state.carrito:
