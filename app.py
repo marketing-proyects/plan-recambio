@@ -28,7 +28,7 @@ def load_prices():
     try:
         df = pd.read_excel(file_path, sheet_name="Hoja1")
         df.columns = [c.strip() for c in df.columns]
-        # Limpieza de espacios en la columna Imagen del Excel
+        # Limpieza de espacios para evitar fallos de coincidencia
         df['Imagen'] = df['Imagen'].astype(str).str.strip()
         columnas_req = ["Producto", "Imagen", "Código", "Precio"]
         df = df.dropna(subset=columnas_req)
@@ -59,15 +59,13 @@ st.markdown(f"""
     <style>
     @font-face {{ font-family: 'WuerthBold'; src: url('data:font/ttf;base64,{f_bold}'); }}
     
-    /* OCULTAR ICONOS DE ENLACE / CLIP / ANCHORS EN TEXTOS Y TÍTULOS */
+    /* OCULTAR ICONOS DE ENLACE / CLIP / ANCHORS */
     .element-container:has(h1) a, .element-container:has(h2) a, .element-container:has(h3) a, 
     .element-container:has(h4) a, .element-container:has(h5) a, .element-container:has(h6) a,
     [data-testid="stHeaderActionElements"] {{
         display: none !important;
     }}
     header {{ visibility: hidden; }}
-    
-    /* Ocultar botones de pantalla completa en imágenes */
     button[title="View fullscreen"] {{ visibility: hidden; }}
     
     .stApp {{ background: none; }}
@@ -137,17 +135,19 @@ elif st.session_state.tab_actual == "CATÁLOGO":
     st.markdown('<div class="card"><div class="card-title">Seleccionar Máquina Nueva</div>', unsafe_allow_html=True)
     p = "assets/productos"
     
+    # Nombres sincronizados 100% con tu Excel
     nombres_reales = {
+        
         "ABSR 12 COMPACT_2.png": "Taladro Destornillador ABS Compacto",
         "ABSR 20 COMBI_1.png": "Taladro Atornillador ABSR 20 Combinado",
         "ABSR 20 COMBI_2.png": "Taladro Atornillador ABSR 20 Compact",
-        "ABSR 20 PWR COMBI_1.png": "Taladro Percutor y Atornillador ABSR 20 PWR Combi",
         "AWSR 20 COMPACT_1.png": "Amoladora Angular AWSR 20 Compact",
-        "ASSR 20_3.png": "Atornillador de Impacto Master ASSR 20 14 inch Compact",                     
-        "ASSR 20 - 12 POWER_1.png": "LLave de Impacto ASSR 20 - 1/2 Compact 20V / 4.0AH",
-        "ASSR 20 - 34_1.png": "LLave de Impacto REDSTRIPE ASSR 20 - 3/4 20V / 8.0AH",
+        "ASSR 20_3.png": "Atornillador de Impacto Master ASSR 20 14 inch Compact",
+        "ASSR 20 - 12 POWER_1.png": "LLave de Impacto ASSR 20 - 1/2 Compact 20V",
+        "ABSR 20 PWR COMBI_1.png": "Taladro Percutor y Atornillador ABSR 20 PWR Combi",
         "ABHR 20 LIGHT_1.png": "Rotomartillo Light",
-        "ABHR 20 POWER_1.png": "Rotomartillo Power"
+        "ABHR 20 POWER_1.png": "Rotomartillo Power",
+         "ASSR 20 - 34_1.png": "LLave de Impacto ASSR 20 - 3/4 20V"
     }
 
     if os.path.exists(p):
@@ -155,18 +155,8 @@ elif st.session_state.tab_actual == "CATÁLOGO":
         if archivos and not df_precios.empty:
             def mostrar_nombre(archivo): return nombres_reales.get(archivo, archivo)
             
-            # LÓGICA DE ORDENAMIENTO POR PRECIO
             lista_imagenes_excel = df_precios['Imagen'].tolist()
-            items_con_precio = []
-            for f in archivos:
-                nombre = mostrar_nombre(f)
-                if nombre.strip() in lista_imagenes_excel:
-                    precio = float(df_precios[df_precios['Imagen'] == nombre.strip()]['Precio'].iloc[0])
-                    items_con_precio.append((f, precio))
-            
-            # Ordenamos por precio (el segundo elemento de la tupla)
-            items_con_precio.sort(key=lambda x: x[1])
-            archivos_validos = [item[0] for item in items_con_precio]
+            archivos_validos = [f for f in archivos if mostrar_nombre(f).strip() in lista_imagenes_excel]
             
             if archivos_validos:
                 sel = st.selectbox("Producto:", archivos_validos, format_func=mostrar_nombre)
@@ -183,30 +173,22 @@ elif st.session_state.tab_actual == "CATÁLOGO":
                     st.write(f"**Código:** {codigo_prod}")
                     
                     num_en_carro = len(st.session_state.carrito)
-                    if st.session_state.dto_base < 20:
-                        st.error("Descuento 0%: Pase por la calculadora.")
-                        dto_item = 0
+                    faltantes_30 = 3 - num_en_carro
+                    if num_en_carro >= 3:
+                        st.success("¡Beneficio 30% activado!")
+                        dto_item = 30
                     else:
-                        faltantes_30 = 3 - num_en_carro
-                        if num_en_carro >= 3:
-                            st.success("¡Beneficio 30% activado!")
-                            dto_item = 30
-                        else:
-                            dto_item = 20
-                            st.info(f"Faltan {max(0, faltantes_30)} unidad(es) para el 30%.")
+                        dto_item = 20
+                        st.info(f"Faltan {max(0, faltantes_30)} unidad(es) para el 30%.")
 
                     if st.button("AÑADIR AL PEDIDO", use_container_width=True):
-                        st.session_state.carrito.append({
-                            "prod": nombre_visible, 
-                            "precio": precio_lista,
-                            "dto": 20
-                        })
+                        st.session_state.carrito.append({"prod": nombre_visible, "precio": precio_lista, "dto": dto_item})
                         if len(st.session_state.carrito) >= 3:
                             for it in st.session_state.carrito: it['dto'] = 30
                         st.toast(f"✅ {nombre_visible} añadido")
                         st.rerun()
             else:
-                st.warning("No hay productos con datos completos en el Excel.")
+                st.warning("No se encontraron coincidencias. Revisa los nombres en el Excel.")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --- PESTAÑA 3: PEDIDO ---
@@ -218,7 +200,6 @@ elif st.session_state.tab_actual == "PEDIDO":
             ca, cb, cc, cd = st.columns([2.5, 1, 1, 0.5])
             subtotal = item['precio'] * (1 - item['dto']/100)
             total_acumulado += subtotal
-            
             ca.write(f"**{i+1}.** {item['prod']}")
             cb.write(f"${item['precio']:,.2f}")
             cc.write(f"**-{item['dto']}%**")
@@ -235,26 +216,20 @@ elif st.session_state.tab_actual == "PEDIDO":
             pdf = FPDF()
             pdf.set_auto_page_break(auto=False)
             pdf.add_page()
-            
-            if os.path.exists("logo_wurth.jpg"):
-                pdf.image("logo_wurth.jpg", x=160, y=10, w=35)
-            
+            if os.path.exists("logo_wurth.jpg"): pdf.image("logo_wurth.jpg", x=160, y=10, w=35)
             pdf.set_font("Arial", 'B', 16)
             pdf.cell(0, 10, "RESUMEN DE VENTA - PLAN RECAMBIO", ln=True, align='L')
             pdf.ln(10)
-            
             pdf.set_font("Arial", '', 12)
             pdf.cell(0, 8, f"Cliente: {st.session_state.nombre_cliente}", ln=True)
             pdf.cell(0, 8, f"Nro. Cliente: {st.session_state.numero_cliente}", ln=True)
             pdf.cell(0, 8, f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True)
             pdf.ln(5)
-            
             pdf.set_font("Arial", 'B', 10)
             pdf.cell(100, 10, "Producto", 1, 0, 'C')
             pdf.cell(30, 10, "P. Lista", 1, 0, 'C')
             pdf.cell(20, 10, "Dto", 1, 0, 'C')
             pdf.cell(40, 10, "Subtotal", 1, 1, 'C')
-            
             pdf.set_font("Arial", '', 9)
             for it in st.session_state.carrito:
                 sb = it['precio'] * (1 - it['dto']/100)
@@ -262,25 +237,16 @@ elif st.session_state.tab_actual == "PEDIDO":
                 pdf.cell(30, 10, f"${it['precio']:,.2f}", 1, 0, 'R')
                 pdf.cell(20, 10, f"{it['dto']}%", 1, 0, 'C')
                 pdf.cell(40, 10, f"${sb:,.2f}", 1, 1, 'R')
-            
             pdf.ln(5)
             pdf.set_font("Arial", 'B', 12)
             pdf.cell(190, 10, f"TOTAL: ${total_acumulado:,.2f}", ln=True, align='R')
-            
             pdf.set_y(270)
             pdf.set_font("Arial", 'I', 8)
             pdf.cell(0, 10, "Documento no oficial - Solo para fines informativos", 0, 0, 'C')
-            
             return pdf.output(dest='S').encode('latin-1')
 
         pdf_bytes = generate_pdf()
-        st.download_button(
-            label="📥 DESCARGAR DETALLE EN PDF",
-            data=pdf_bytes,
-            file_name=f"Venta_{st.session_state.nombre_cliente.replace(' ','_')}.pdf",
-            mime="application/pdf",
-            use_container_width=True
-        )
+        st.download_button(label="📥 DESCARGAR PDF", data=pdf_bytes, file_name=f"Venta_{st.session_state.nombre_cliente}.pdf", mime="application/pdf", use_container_width=True)
     else:
         st.info("El pedido está vacío.")
     st.markdown('</div>', unsafe_allow_html=True)
