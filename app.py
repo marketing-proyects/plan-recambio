@@ -25,16 +25,14 @@ def load_prices():
     if not os.path.exists(file_path):
         return pd.DataFrame()
     try:
-        # Leemos la Hoja1 del Excel
         df = pd.read_excel(file_path, sheet_name="Hoja1")
-        # Filtro de seguridad: Solo filas con datos completos en las 4 columnas clave
-        columnas_req = ["Producto", "Imagen", "Código", "Precio"]
-        # Limpiamos nombres de columnas por si tienen espacios
         df.columns = [c.strip() for c in df.columns]
+        # Filtro de seguridad: Solo filas con datos completos
+        columnas_req = ["Producto", "Imagen", "Código", "Precio"]
         df = df.dropna(subset=columnas_req)
         return df
     except Exception as e:
-        st.error(f"Error al cargar el Excel: {e}")
+        st.error(f"Error cargando Excel: {e}")
         return pd.DataFrame()
 
 df_precios = load_prices()
@@ -58,7 +56,17 @@ f_bold = get_base64("WuerthBold.ttf")
 st.markdown(f"""
     <style>
     @font-face {{ font-family: 'WuerthBold'; src: url('data:font/ttf;base64,{f_bold}'); }}
+    
+    /* OCULTAR ICONOS DE ENLACE / CLIP / ANCHORS */
+    .element-container:has(h1) a, .element-container:has(h2) a, .element-container:has(h3) a, 
+    .element-container:has(h4) a, .element-container:has(h5) a, .element-container:has(h6) a {{
+        display: none !important;
+    }}
     header {{ visibility: hidden; }}
+    
+    /* Ocultar botones de pantalla completa en imágenes */
+    button[title="View fullscreen"] {{ visibility: hidden; }}
+    
     .stApp {{ background: none; }}
     .bg-layer {{
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -126,7 +134,6 @@ elif st.session_state.tab_actual == "CATÁLOGO":
     st.markdown('<div class="card"><div class="card-title">Seleccionar Máquina Nueva</div>', unsafe_allow_html=True)
     p = "assets/productos"
     
-    # Mapeo corregido (Light)
     nombres_reales = {
         "ABSR 12 COMPACT_2.png": "Taladro Destornillador ABS Compacto",
         "ABSR 20 COMBI_1.png": "Taladro Atornillador ABSR 20 Combinado",
@@ -145,7 +152,6 @@ elif st.session_state.tab_actual == "CATÁLOGO":
         if archivos and not df_precios.empty:
             def mostrar_nombre(archivo): return nombres_reales.get(archivo, archivo)
             
-            # Solo mostramos en el selectbox los productos que tienen Imagen/Producto completo en el Excel
             lista_imagenes_excel = df_precios['Imagen'].tolist()
             archivos_validos = [f for f in archivos if mostrar_nombre(f) in lista_imagenes_excel]
             
@@ -153,7 +159,6 @@ elif st.session_state.tab_actual == "CATÁLOGO":
                 sel = st.selectbox("Producto:", archivos_validos, format_func=mostrar_nombre)
                 nombre_visible = mostrar_nombre(sel)
                 
-                # Extraer datos de la fila del Excel
                 datos_prod = df_precios[df_precios['Imagen'] == nombre_visible].iloc[0]
                 precio_lista = float(datos_prod['Precio'])
                 codigo_prod = str(datos_prod['Código'])
@@ -169,12 +174,12 @@ elif st.session_state.tab_actual == "CATÁLOGO":
                         st.error("Descuento 0%: Pase por la calculadora.")
                         dto_item = 0
                     else:
-                        if num_en_carro >= 2:
+                        if num_en_carro >= 2: # Al cargar la 3ra unidad efectiva
                             st.success("¡Beneficio 30% activado!")
                             dto_item = 30
                         else:
                             dto_item = 20
-                            st.info(f"Faltan {2 - num_en_carro} unidad(es) para el 30%.")
+                            st.info(f"Faltan {3 - num_en_carro} unidad(es) para el 30%.")
 
                     if st.button("AÑADIR AL PEDIDO", use_container_width=True):
                         st.session_state.carrito.append({
@@ -187,12 +192,12 @@ elif st.session_state.tab_actual == "CATÁLOGO":
                         st.toast(f"✅ {nombre_visible} añadido")
                         st.rerun()
             else:
-                st.warning("No hay productos con datos completos en el Excel para mostrar.")
+                st.warning("No hay productos con datos completos en el Excel.")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --- PESTAÑA 3: PEDIDO ---
 elif st.session_state.tab_actual == "PEDIDO":
-    st.markdown(f'<div class="card"><div class="card-title">Pedido: {st.session_state.nombre_cliente}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="card"><div class="card-title">Resumen de Venta</div>', unsafe_allow_html=True)
     if st.session_state.carrito:
         total_acumulado = 0
         for i, item in enumerate(st.session_state.carrito):
@@ -210,9 +215,8 @@ elif st.session_state.tab_actual == "PEDIDO":
                 st.rerun()
         
         st.divider()
-        st.markdown(f"### Total Final a Pagar: ${total_acumulado:,.2f}")
+        st.markdown(f"### Total Final: ${total_acumulado:,.2f}")
         
-        # --- GENERACIÓN DE PDF ---
         def generate_pdf():
             pdf = FPDF()
             pdf.add_page()
@@ -223,24 +227,21 @@ elif st.session_state.tab_actual == "PEDIDO":
             pdf.cell(0, 10, f"Cliente: {st.session_state.nombre_cliente}", ln=True)
             pdf.cell(0, 10, f"Nro. Cliente: {st.session_state.numero_cliente}", ln=True)
             pdf.ln(5)
-            
             pdf.set_font("Arial", 'B', 10)
             pdf.cell(100, 10, "Producto", 1)
             pdf.cell(30, 10, "P. Lista", 1)
             pdf.cell(20, 10, "Dto", 1)
             pdf.cell(40, 10, "Subtotal", 1, ln=True)
-            
             pdf.set_font("Arial", '', 9)
             for it in st.session_state.carrito:
-                sub = it['precio'] * (1 - it['dto']/100)
+                sb = it['precio'] * (1 - it['dto']/100)
                 pdf.cell(100, 10, it['prod'][:50], 1)
                 pdf.cell(30, 10, f"${it['precio']:,.2f}", 1)
                 pdf.cell(20, 10, f"{it['dto']}%", 1)
-                pdf.cell(40, 10, f"${sub:,.2f}", 1, ln=True)
-            
+                pdf.cell(40, 10, f"${sb:,.2f}", 1, ln=True)
             pdf.ln(5)
             pdf.set_font("Arial", 'B', 12)
-            pdf.cell(190, 10, f"TOTAL A PAGAR: ${total_acumulado:,.2f}", ln=True, align='R')
+            pdf.cell(190, 10, f"TOTAL: ${total_acumulado:,.2f}", ln=True, align='R')
             return pdf.output(dest='S').encode('latin-1')
 
         pdf_bytes = generate_pdf()
