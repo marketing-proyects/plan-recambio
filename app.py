@@ -4,7 +4,6 @@ import os
 import random
 import pandas as pd
 from fpdf import FPDF
-from io import BytesIO
 
 # --- SOPORTE DE ARCHIVOS ---
 def get_base64(file_path):
@@ -19,17 +18,23 @@ def get_random_bg():
     fondos = [f for f in os.listdir(current_bg_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
     return os.path.join(current_bg_dir, random.choice(fondos)) if fondos else None
 
-# --- CARGA DE DATOS (EXCEL SIMPLIFICADO) ---
+# --- CARGA DE DATOS (LISTA_PRECIOS.XLSX) ---
 @st.cache_data
 def load_prices():
+    file_path = "Lista_Precios.xlsx"
+    if not os.path.exists(file_path):
+        return pd.DataFrame()
     try:
-        # Cargamos el archivo simplificado
-        df = pd.read_excel("Lista_Precios.xlsx", sheet_name="Hoja1")
-        # Filtro: Solo filas donde Producto, Imagen, Código y Precio tengan datos
-        df = df.dropna(subset=["Producto", "Imagen", "Código", "Precio"])
+        # Leemos la Hoja1 del Excel
+        df = pd.read_excel(file_path, sheet_name="Hoja1")
+        # Filtro de seguridad: Solo filas con datos completos en las 4 columnas clave
+        columnas_req = ["Producto", "Imagen", "Código", "Precio"]
+        # Limpiamos nombres de columnas por si tienen espacios
+        df.columns = [c.strip() for c in df.columns]
+        df = df.dropna(subset=columnas_req)
         return df
     except Exception as e:
-        st.error(f"Error cargando Lista_Precios.xlsx: {e}")
+        st.error(f"Error al cargar el Excel: {e}")
         return pd.DataFrame()
 
 df_precios = load_prices()
@@ -120,6 +125,8 @@ if st.session_state.tab_actual == "CALCULADORA":
 elif st.session_state.tab_actual == "CATÁLOGO":
     st.markdown('<div class="card"><div class="card-title">Seleccionar Máquina Nueva</div>', unsafe_allow_html=True)
     p = "assets/productos"
+    
+    # Mapeo corregido (Light)
     nombres_reales = {
         "ABSR 12 COMPACT_2.png": "Taladro Destornillador ABS Compacto",
         "ABSR 20 COMBI_1.png": "Taladro Atornillador ABSR 20 Combinado",
@@ -135,43 +142,44 @@ elif st.session_state.tab_actual == "CATÁLOGO":
 
     if os.path.exists(p):
         archivos = sorted([f for f in os.listdir(p) if f.lower().endswith('.png')])
-        if archivos:
+        if archivos and not df_precios.empty:
             def mostrar_nombre(archivo): return nombres_reales.get(archivo, archivo)
             
-            # Filtramos el selectbox: solo mostramos archivos que están mapeados en el Excel (columna Imagen)
-            opciones_validas = [f for f in archivos if mostrar_nombre(f) in df_precios['Imagen'].values]
+            # Solo mostramos en el selectbox los productos que tienen Imagen/Producto completo en el Excel
+            lista_imagenes_excel = df_precios['Imagen'].tolist()
+            archivos_validos = [f for f in archivos if mostrar_nombre(f) in lista_imagenes_excel]
             
-            if opciones_validas:
-                sel = st.selectbox("Producto:", opciones_validas, format_func=mostrar_nombre)
-                
-                # Buscamos la fila correspondiente en el Excel usando el nombre visible
+            if archivos_validos:
+                sel = st.selectbox("Producto:", archivos_validos, format_func=mostrar_nombre)
                 nombre_visible = mostrar_nombre(sel)
-                info_prod = df_precios[df_precios['Imagen'] == nombre_visible].iloc[0]
+                
+                # Extraer datos de la fila del Excel
+                datos_prod = df_precios[df_precios['Imagen'] == nombre_visible].iloc[0]
+                precio_lista = float(datos_prod['Precio'])
+                codigo_prod = str(datos_prod['Código'])
                 
                 ci, cs = st.columns(2)
                 with ci: st.image(os.path.join(p, sel), width=280)
                 with cs:
-                    # Mostramos Precio y Código del Excel
-                    st.markdown(f"### Precio: ${info_prod['Precio']:,.2f}")
-                    st.write(f"**Código:** {info_prod['Código']}")
+                    st.markdown(f"### Precio: ${precio_lista:,.2f}")
+                    st.write(f"**Código:** {codigo_prod}")
                     
                     num_en_carro = len(st.session_state.carrito)
                     if st.session_state.dto_base < 20:
                         st.error("Descuento 0%: Pase por la calculadora.")
                         dto_item = 0
                     else:
-                        faltantes = 3 - num_en_carro
                         if num_en_carro >= 2:
                             st.success("¡Beneficio 30% activado!")
                             dto_item = 30
                         else:
                             dto_item = 20
-                            st.info(f"Faltan {faltantes if faltantes > 0 else 0} unidad(es) para el 30%.")
+                            st.info(f"Faltan {2 - num_en_carro} unidad(es) para el 30%.")
 
                     if st.button("AÑADIR AL PEDIDO", use_container_width=True):
                         st.session_state.carrito.append({
                             "prod": nombre_visible, 
-                            "precio": float(info_prod['Precio']),
+                            "precio": precio_lista,
                             "dto": 20
                         })
                         if len(st.session_state.carrito) >= 3:
@@ -179,24 +187,22 @@ elif st.session_state.tab_actual == "CATÁLOGO":
                         st.toast(f"✅ {nombre_visible} añadido")
                         st.rerun()
             else:
-                st.warning("No se encontraron productos con información completa en el Excel.")
+                st.warning("No hay productos con datos completos en el Excel para mostrar.")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --- PESTAÑA 3: PEDIDO ---
 elif st.session_state.tab_actual == "PEDIDO":
     st.markdown(f'<div class="card"><div class="card-title">Pedido: {st.session_state.nombre_cliente}</div>', unsafe_allow_html=True)
     if st.session_state.carrito:
-        monto_total = 0.0
+        total_acumulado = 0
         for i, item in enumerate(st.session_state.carrito):
             ca, cb, cc, cd = st.columns([2.5, 1, 1, 0.5])
-            p_lista = item['precio']
-            descuento = item['dto']
-            subtotal = p_lista * (1 - descuento/100)
-            monto_total += subtotal
+            subtotal = item['precio'] * (1 - item['dto']/100)
+            total_acumulado += subtotal
             
             ca.write(f"**{i+1}.** {item['prod']}")
-            cb.write(f"${p_lista:,.2f}")
-            cc.write(f"**-{descuento}%**")
+            cb.write(f"${item['precio']:,.2f}")
+            cc.write(f"**-{item['dto']}%**")
             if cd.button("❌", key=f"del_{i}"):
                 st.session_state.carrito.pop(i)
                 if len(st.session_state.carrito) < 3:
@@ -204,41 +210,44 @@ elif st.session_state.tab_actual == "PEDIDO":
                 st.rerun()
         
         st.divider()
-        st.markdown(f"### Monto Total Final: ${monto_total:,.2f}")
+        st.markdown(f"### Total Final a Pagar: ${total_acumulado:,.2f}")
         
         # --- GENERACIÓN DE PDF ---
         def generate_pdf():
             pdf = FPDF()
             pdf.add_page()
             pdf.set_font("Arial", 'B', 16)
-            pdf.cell(0, 10, "Resumen de Pedido - Würth Plan Recambio", ln=True, align='C')
+            pdf.cell(0, 10, "RESUMEN DE VENTA - PLAN RECAMBIO WÜRTH", ln=True, align='C')
             pdf.ln(10)
             pdf.set_font("Arial", '', 12)
             pdf.cell(0, 10, f"Cliente: {st.session_state.nombre_cliente}", ln=True)
-            pdf.cell(0, 10, f"Nro Cliente: {st.session_state.numero_cliente}", ln=True)
+            pdf.cell(0, 10, f"Nro. Cliente: {st.session_state.numero_cliente}", ln=True)
             pdf.ln(5)
+            
             pdf.set_font("Arial", 'B', 10)
             pdf.cell(100, 10, "Producto", 1)
-            pdf.cell(30, 10, "Precio Lista", 1)
+            pdf.cell(30, 10, "P. Lista", 1)
             pdf.cell(20, 10, "Dto", 1)
             pdf.cell(40, 10, "Subtotal", 1, ln=True)
+            
             pdf.set_font("Arial", '', 9)
             for it in st.session_state.carrito:
-                sb = it['precio'] * (1 - it['dto']/100)
+                sub = it['precio'] * (1 - it['dto']/100)
                 pdf.cell(100, 10, it['prod'][:50], 1)
                 pdf.cell(30, 10, f"${it['precio']:,.2f}", 1)
                 pdf.cell(20, 10, f"{it['dto']}%", 1)
-                pdf.cell(40, 10, f"${sb:,.2f}", 1, ln=True)
+                pdf.cell(40, 10, f"${sub:,.2f}", 1, ln=True)
+            
             pdf.ln(5)
             pdf.set_font("Arial", 'B', 12)
-            pdf.cell(190, 10, f"TOTAL: ${monto_total:,.2f}", ln=True, align='R')
+            pdf.cell(190, 10, f"TOTAL A PAGAR: ${total_acumulado:,.2f}", ln=True, align='R')
             return pdf.output(dest='S').encode('latin-1')
 
         pdf_bytes = generate_pdf()
         st.download_button(
             label="📥 DESCARGAR DETALLE EN PDF",
             data=pdf_bytes,
-            file_name=f"Venta_{st.session_state.nombre_cliente.replace(' ','_')}.pdf",
+            file_name=f"Venta_{st.session_state.nombre_cliente}.pdf",
             mime="application/pdf",
             use_container_width=True
         )
