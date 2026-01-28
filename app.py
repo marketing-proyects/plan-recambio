@@ -18,44 +18,34 @@ def get_random_bg():
     fondos = [f for f in os.listdir(current_bg_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
     return os.path.join(current_bg_dir, random.choice(fondos)) if fondos else None
 
-# --- LÓGICA DE DATOS EXCEL ---
+# --- LÓGICA DE DATOS EXCEL (SOLO PARA CATÁLOGO) ---
 @st.cache_data
 def cargar_datos_csv():
     file_path = "Lista_Precios - CORDLESS MACHINES.xlsx - Hoja1.csv"
     if os.path.exists(file_path):
         try:
-            # Saltamos la primera fila de título para leer los encabezados correctamente
+            # skiprows=1 porque la primera fila es "Power Tools"
             df = pd.read_csv(file_path, skiprows=1)
             df.columns = [c.strip() for c in df.columns]
             return df
-        except:
-            return None
+        except: return None
     return None
 
 def buscar_producto_excel(nombre_app, df):
     if df is None: return None
-    # Lógica de coincidencia del 80% de palabras
     palabras_app = set(re.findall(r'\w+', nombre_app.lower()))
     if not palabras_app: return None
-    
     mejor_match = None
     max_score = 0
-    
     for _, row in df.iterrows():
         nombre_csv = str(row['Producto']).replace('\n', ' ').lower()
         palabras_csv = set(re.findall(r'\w+', nombre_csv))
-        if not palabras_csv: continue
-        
         interseccion = palabras_app.intersection(palabras_csv)
         score = len(interseccion) / len(palabras_app)
-        
         if score > max_score:
             max_score = score
             mejor_match = row
-            
-    if max_score >= 0.8:
-        return mejor_match
-    return None
+    return mejor_match if max_score >= 0.8 else None
 
 # --- INICIALIZACIÓN DE ESTADOS ---
 if 'carrito' not in st.session_state: st.session_state.carrito = []
@@ -64,7 +54,7 @@ if 'nombre_cliente' not in st.session_state: st.session_state.nombre_cliente = "
 if 'numero_cliente' not in st.session_state: st.session_state.numero_cliente = ""
 if 'tab_actual' not in st.session_state: st.session_state.tab_actual = "CALCULADORA"
 
-# Cargar el Excel
+# Cargamos el excel una sola vez
 df_precios = cargar_datos_csv()
 
 # --- CONFIGURACIÓN DE PÁGINA ---
@@ -75,7 +65,7 @@ fondo_path = get_random_bg()
 logo_base64 = get_base64("logo_wurth.jpg")
 f_bold = get_base64("WuerthBold.ttf")
 
-# --- CSS INTEGRAL ---
+# --- CSS ORIGINAL ---
 st.markdown(f"""
     <style>
     @font-face {{ font-family: 'WuerthBold'; src: url('data:font/ttf;base64,{f_bold}'); }}
@@ -142,7 +132,7 @@ if st.session_state.tab_actual == "CALCULADORA":
             st.button("MÍNIMO 20% REQUERIDO", use_container_width=True, disabled=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- PESTAÑA 2: CATÁLOGO ---
+# --- PESTAÑA 2: CATÁLOGO (AQUÍ ESTÁN LOS CAMBIOS) ---
 elif st.session_state.tab_actual == "CATÁLOGO":
     st.markdown('<div class="card"><div class="card-title">Seleccionar Máquina Nueva</div>', unsafe_allow_html=True)
     p = "assets/productos"
@@ -165,26 +155,28 @@ elif st.session_state.tab_actual == "CATÁLOGO":
             def mostrar_nombre(archivo): return nombres_reales.get(archivo, archivo)
             sel = st.selectbox("Producto:", archivos, format_func=mostrar_nombre)
             
-            # Buscar info en el Excel
-            nombre_prod = mostrar_nombre(sel)
-            info_excel = buscar_producto_excel(nombre_prod, df_precios)
+            # Buscamos en el excel el producto seleccionado
+            info_excel = buscar_producto_excel(mostrar_nombre(sel), df_precios)
             
             ci, cs = st.columns(2)
             with ci: 
                 st.image(os.path.join(p, sel), width=280)
-                # Mostrar precio junto con la imagen si se encuentra en el Excel
+                # MOSTRAR PRECIO DEBAJO DE LA IMAGEN
                 if info_excel is not None:
-                    precio_val = info_excel.get('Precio', '0')
-                    st.markdown(f"""<h2 style='color: #CC0000; font-family: "WuerthBold"; margin-top: 10px;'>${precio_val}</h2>""", unsafe_allow_html=True)
+                    try:
+                        precio_num = float(info_excel['Precio'])
+                        st.markdown(f"<h2 style='color: #CC0000; font-family: \"WuerthBold\";'>${precio_num:,.2f}</h2>", unsafe_allow_html=True)
+                    except:
+                        st.markdown(f"<h2 style='color: #CC0000; font-family: \"WuerthBold\";'>${info_excel['Precio']}</h2>", unsafe_allow_html=True)
             
             with cs:
-                # Características técnicas (+)
+                # EXPANDER (+) PARA CARACTERÍSTICAS
                 if info_excel is not None:
                     with st.expander("(+) Características técnicas"):
                         st.write(f"**Voltaje:** {info_excel.get('Voltaje', 'N/A')}")
                         st.write(f"**Potencia:** {info_excel.get('Potencia', 'N/A')}")
-                        desc_limpia = str(info_excel.get('Características', 'N/A')).replace('\n', ' ')
-                        st.write(f"**Detalle:** {desc_limpia}")
+                        detalles = str(info_excel.get('Características', 'N/A')).replace('\n', ' ')
+                        st.caption(detalles)
 
                 num_en_carro = len(st.session_state.carrito)
                 if st.session_state.dto_base < 20:
@@ -193,11 +185,11 @@ elif st.session_state.tab_actual == "CATÁLOGO":
                 else:
                     faltantes = 3 - num_en_carro
                     if num_en_carro >= 3:
-                        st.success("¡Beneficio 30% activado en todo el pedido!")
+                        st.success("¡Beneficio 30% activado!")
                         dto_item = 30
                     else:
                         dto_item = 20
-                        st.info(f"Faltan {faltantes} unidad(es) en el pedido para el beneficio de 30%.")
+                        st.info(f"Faltan {faltantes} para el 30%.")
 
                 if st.button("AÑADIR AL PEDIDO", use_container_width=True):
                     st.session_state.carrito.append({"prod": mostrar_nombre(sel), "dto": 20})
@@ -220,10 +212,6 @@ elif st.session_state.tab_actual == "PEDIDO":
                 if len(st.session_state.carrito) < 3:
                     for it in st.session_state.carrito: it['dto'] = 20 if st.session_state.dto_base >= 20 else 0
                 st.rerun()
-        st.divider()
-        n = len(st.session_state.carrito)
-        f_dto = 30 if n >= 3 else (20 if st.session_state.dto_base >= 20 else 0)
-        st.write(f"**Unidades:** {n} | **Descuento Final:** {f_dto}%")
     else:
         st.info("El pedido está vacío.")
     st.markdown('</div>', unsafe_allow_html=True)
