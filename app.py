@@ -129,7 +129,7 @@ elif st.session_state.tab_actual == "CATÁLOGO":
     st.markdown('<div class="card"><div class="card-title">Seleccionar Máquina Nueva</div>', unsafe_allow_html=True)
     p = "assets/productos"
     
-    # NOMBRES CORREGIDOS PARA COINCIDIR 100% CON TU EXCEL
+    # NOMBRES COINCIDIR 100% CON PLANILLA EXCEL
     nombres_reales = {
         "ABSR 12 COMPACT_2.png": "Taladro Destornillador ABS Compacto",
         "ABSR 20 COMBI_1.png": "Taladro Atornillador ABSR 20 Combinado",
