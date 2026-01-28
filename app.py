@@ -4,6 +4,7 @@ import os
 import random
 import pandas as pd
 from fpdf import FPDF
+from datetime import datetime
 
 # --- SOPORTE DE ARCHIVOS ---
 def get_base64(file_path):
@@ -27,7 +28,6 @@ def load_prices():
     try:
         df = pd.read_excel(file_path, sheet_name="Hoja1")
         df.columns = [c.strip() for c in df.columns]
-        # Filtro de seguridad: Solo filas con datos completos
         columnas_req = ["Producto", "Imagen", "Código", "Precio"]
         df = df.dropna(subset=columnas_req)
         return df
@@ -59,12 +59,12 @@ st.markdown(f"""
     
     /* OCULTAR ICONOS DE ENLACE / CLIP / ANCHORS */
     .element-container:has(h1) a, .element-container:has(h2) a, .element-container:has(h3) a, 
-    .element-container:has(h4) a, .element-container:has(h5) a, .element-container:has(h6) a {{
+    .element-container:has(h4) a, .element-container:has(h5) a, .element-container:has(h6) a,
+    [data-testid="stHeaderActionElements"] {{
         display: none !important;
     }}
     header {{ visibility: hidden; }}
     
-    /* Ocultar botones de pantalla completa en imágenes */
     button[title="View fullscreen"] {{ visibility: hidden; }}
     
     .stApp {{ background: none; }}
@@ -174,12 +174,14 @@ elif st.session_state.tab_actual == "CATÁLOGO":
                         st.error("Descuento 0%: Pase por la calculadora.")
                         dto_item = 0
                     else:
-                        if num_en_carro >= 2: # Al cargar la 3ra unidad efectiva
+                        # REGLA CORREGIDA: Se activa con 3 unidades cargadas (carrito tiene 0, 1 o 2)
+                        faltantes_30 = 3 - num_en_carro
+                        if num_en_carro >= 3:
                             st.success("¡Beneficio 30% activado!")
                             dto_item = 30
                         else:
                             dto_item = 20
-                            st.info(f"Faltan {3 - num_en_carro} unidad(es) para el 30%.")
+                            st.info(f"Faltan {faltantes_30} unidad(es) para el 30%.")
 
                     if st.button("AÑADIR AL PEDIDO", use_container_width=True):
                         st.session_state.carrito.append({
@@ -220,28 +222,44 @@ elif st.session_state.tab_actual == "PEDIDO":
         def generate_pdf():
             pdf = FPDF()
             pdf.add_page()
+            
+            # Logo Würth arriba a la derecha
+            if os.path.exists("logo_wurth.jpg"):
+                pdf.image("logo_wurth.jpg", x=160, y=10, w=35)
+            
             pdf.set_font("Arial", 'B', 16)
-            pdf.cell(0, 10, "RESUMEN DE VENTA - PLAN RECAMBIO WÜRTH", ln=True, align='C')
+            pdf.cell(0, 10, "RESUMEN DE VENTA - PLAN RECAMBIO", ln=True, align='L')
             pdf.ln(10)
+            
             pdf.set_font("Arial", '', 12)
             pdf.cell(0, 10, f"Cliente: {st.session_state.nombre_cliente}", ln=True)
             pdf.cell(0, 10, f"Nro. Cliente: {st.session_state.numero_cliente}", ln=True)
+            pdf.cell(0, 10, f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True)
             pdf.ln(5)
+            
             pdf.set_font("Arial", 'B', 10)
             pdf.cell(100, 10, "Producto", 1)
             pdf.cell(30, 10, "P. Lista", 1)
             pdf.cell(20, 10, "Dto", 1)
             pdf.cell(40, 10, "Subtotal", 1, ln=True)
+            
             pdf.set_font("Arial", '', 9)
             for it in st.session_state.carrito:
                 sb = it['precio'] * (1 - it['dto']/100)
-                pdf.cell(100, 10, it['prod'][:50], 1)
+                pdf.cell(100, 10, it['prod'][:55], 1)
                 pdf.cell(30, 10, f"${it['precio']:,.2f}", 1)
                 pdf.cell(20, 10, f"{it['dto']}%", 1)
                 pdf.cell(40, 10, f"${sb:,.2f}", 1, ln=True)
+            
             pdf.ln(5)
             pdf.set_font("Arial", 'B', 12)
             pdf.cell(190, 10, f"TOTAL: ${total_acumulado:,.2f}", ln=True, align='R')
+            
+            # Nota al pie: Documento no oficial
+            pdf.set_y(-20)
+            pdf.set_font("Arial", 'I', 8)
+            pdf.cell(0, 10, "Documento no oficial - Solo para fines informativos", 0, 0, 'C')
+            
             return pdf.output(dest='S').encode('latin-1')
 
         pdf_bytes = generate_pdf()
