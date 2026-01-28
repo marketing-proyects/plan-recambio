@@ -19,7 +19,7 @@ def get_random_bg():
     fondos = [f for f in os.listdir(current_bg_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
     return os.path.join(current_bg_dir, random.choice(fondos)) if fondos else None
 
-# --- CARGA DE DATOS (ORDEN DE APARICIÓN) ---
+# --- CARGA DE DATOS (LISTA_PRECIOS.XLSX) ---
 @st.cache_data
 def load_prices():
     file_path = "Lista_Precios.xlsx"
@@ -28,11 +28,11 @@ def load_prices():
     try:
         df = pd.read_excel(file_path, sheet_name="Hoja1")
         df.columns = [c.strip() for c in df.columns]
-        # Limpieza de espacios para asegurar coincidencia
+        # Limpieza de espacios para evitar fallos de coincidencia
         df['Imagen'] = df['Imagen'].astype(str).str.strip()
         columnas_req = ["Producto", "Imagen", "Código", "Precio"]
         df = df.dropna(subset=columnas_req)
-        return df # Retorna el DF tal cual viene (con tu orden manual)
+        return df
     except Exception as e:
         st.error(f"Error cargando Excel: {e}")
         return pd.DataFrame()
@@ -58,11 +58,16 @@ f_bold = get_base64("WuerthBold.ttf")
 st.markdown(f"""
     <style>
     @font-face {{ font-family: 'WuerthBold'; src: url('data:font/ttf;base64,{f_bold}'); }}
+    
+    /* OCULTAR ICONOS DE ENLACE / CLIP / ANCHORS */
     .element-container:has(h1) a, .element-container:has(h2) a, .element-container:has(h3) a, 
     .element-container:has(h4) a, .element-container:has(h5) a, .element-container:has(h6) a,
-    [data-testid="stHeaderActionElements"] {{ display: none !important; }}
+    [data-testid="stHeaderActionElements"] {{
+        display: none !important;
+    }}
     header {{ visibility: hidden; }}
     button[title="View fullscreen"] {{ visibility: hidden; }}
+    
     .stApp {{ background: none; }}
     .bg-layer {{
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -130,37 +135,31 @@ elif st.session_state.tab_actual == "CATÁLOGO":
     st.markdown('<div class="card"><div class="card-title">Seleccionar Máquina Nueva</div>', unsafe_allow_html=True)
     p = "assets/productos"
     
+    # Nombres sincronizados 100% con tu Excel
     nombres_reales = {
+        
         "ABSR 12 COMPACT_2.png": "Taladro Destornillador ABS Compacto",
         "ABSR 20 COMBI_1.png": "Taladro Atornillador ABSR 20 Combinado",
         "ABSR 20 COMBI_2.png": "Taladro Atornillador ABSR 20 Compact",
-        "ABSR 20 PWR COMBI_1.png": "Taladro Percutor y Atornillador ABSR 20 PWR Combi",
         "AWSR 20 COMPACT_1.png": "Amoladora Angular AWSR 20 Compact",
-        "ASSR 20_3.png": "Atornillador de Impacto Master ASSR 20 14 inch Compact",      
-        "ASSR 20 - 12 POWER_1.png": "LLave de Impacto ASSR 20 - 1/2 Compact 20V / 4.0AH",
-        "ASSR 20 - 34_1.png": "LLave de Impacto REDSTRIPE ASSR 20 - 3/4 20V / 8.0AH",
+        "ASSR 20_3.png": "Atornillador de Impacto Master ASSR 20 14 inch Compact",
+        "ASSR 20 - 12 POWER_1.png": "LLave de Impacto ASSR 20 - 1/2 Compact 20V",
+        "ABSR 20 PWR COMBI_1.png": "Taladro Percutor y Atornillador ABSR 20 PWR Combi",
         "ABHR 20 LIGHT_1.png": "Rotomartillo Light",
-        "ABHR 20 POWER_1.png": "Rotomartillo Power"
+        "ABHR 20 POWER_1.png": "Rotomartillo Power",
+         "ASSR 20 - 34_1.png": "LLave de Impacto ASSR 20 - 3/4 20V"
     }
 
     if os.path.exists(p):
-        archivos = [f for f in os.listdir(p) if f.lower().endswith('.png')]
+        archivos = sorted([f for f in os.listdir(p) if f.lower().endswith('.png')])
         if archivos and not df_precios.empty:
             def mostrar_nombre(archivo): return nombres_reales.get(archivo, archivo)
             
-            # RESPETAR ORDEN DE APARICIÓN DEL EXCEL
-            lista_excel_ordenada = df_precios['Imagen'].tolist()
+            lista_imagenes_excel = df_precios['Imagen'].tolist()
+            archivos_validos = [f for f in archivos if mostrar_nombre(f).strip() in lista_imagenes_excel]
             
-            # Mapeamos los archivos físicos que coinciden con los nombres del Excel en su orden
-            archivos_finales = []
-            for nombre_excel in lista_excel_ordenada:
-                for f in archivos:
-                    if mostrar_nombre(f).strip() == nombre_excel.strip():
-                        archivos_finales.append(f)
-                        break
-            
-            if archivos_finales:
-                sel = st.selectbox("Producto:", archivos_finales, format_func=mostrar_nombre)
+            if archivos_validos:
+                sel = st.selectbox("Producto:", archivos_validos, format_func=mostrar_nombre)
                 nombre_visible = mostrar_nombre(sel).strip()
                 
                 datos_prod = df_precios[df_precios['Imagen'] == nombre_visible].iloc[0]
@@ -186,9 +185,10 @@ elif st.session_state.tab_actual == "CATÁLOGO":
                         st.session_state.carrito.append({"prod": nombre_visible, "precio": precio_lista, "dto": dto_item})
                         if len(st.session_state.carrito) >= 3:
                             for it in st.session_state.carrito: it['dto'] = 30
+                        st.toast(f"✅ {nombre_visible} añadido")
                         st.rerun()
             else:
-                st.warning("No se encontraron coincidencias exactas entre el Excel y las fotos.")
+                st.warning("No se encontraron coincidencias. Revisa los nombres en el Excel.")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --- PESTAÑA 3: PEDIDO ---
