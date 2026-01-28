@@ -144,7 +144,7 @@ elif st.session_state.tab_actual == "CATÁLOGO":
         "AWSR 20 COMPACT_1.png": "Amoladora Angular AWSR 20 Compact",
         "ASSR 20_3.png": "Atornillador de Impacto Master ASSR 20 14 inch Compact",                     
         "ASSR 20 - 12 POWER_1.png": "LLave de Impacto ASSR 20 - 1/2 Compact 20V",
-        "ASSR 20 - 34_1.png": "LLave de Impacto REDSTRIPE ASSR 20 - 3/4 20V",
+        "ASSR 20 - 34_1.png": "LLave de Impacto ASSR 20 - 3/4 20V",
         "ABHR 20 LIGHT_1.png": "Rotomartillo Light",
         "ABHR 20 POWER_1.png": "Rotomartillo Power"
     }
