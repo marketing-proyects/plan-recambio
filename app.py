@@ -234,9 +234,9 @@ elif st.session_state.tab_actual == "PEDIDO":
             pdf.cell(0, 8, f"Nro. Cliente: {st.session_state.numero_cliente}", ln=True)
             pdf.cell(0, 8, f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True)
             
-            # --- Información adicional en el PDF ---
-            cant_u = st.session_state.get('n1', 0) + st.session_state.get('n2', 0) + st.session_state.get('n3', 0)
-            pdf.cell(0, 8, f"Maquinas entregadas por el cliente: {cant_u}", ln=True)
+            # --- INFORMACIÓN DE UNIDADES ---
+            unidades_cliente = st.session_state.get('n1', 0) + st.session_state.get('n2', 0) + st.session_state.get('n3', 0)
+            pdf.cell(0, 8, f"Maquinas entregadas por el cliente: {unidades_cliente}", ln=True)
             
             pdf.ln(5)
             pdf.set_font("Arial", 'B', 10)
@@ -246,25 +246,27 @@ elif st.session_state.tab_actual == "PEDIDO":
             pdf.cell(40, 10, "Subtotal", 1, 1, 'C')
             
             pdf.set_font("Arial", '', 9)
-            suma_lista = 0
+            suma_precios_lista = 0 
             for it in st.session_state.carrito:
                 sb = it['precio'] * (1 - it['dto']/100)
-                suma_lista += it['precio']
+                suma_precios_lista += it['precio']
                 pdf.cell(100, 10, it['prod'][:55], 1)
                 pdf.cell(30, 10, f"${it['precio']:,.2f}", 1, 0, 'R')
                 pdf.cell(20, 10, f"{it['dto']}%", 1, 0, 'C')
                 pdf.cell(40, 10, f"${sb:,.2f}", 1, 1, 'R')
             
             pdf.ln(5)
-            ahorro_total = suma_lista - total_acumulado
+            
+            # --- CÁLCULO DE AHORRO ---
+            ahorro_total = suma_precios_lista - total_acumulado
             
             pdf.set_font("Arial", 'B', 12)
             pdf.cell(190, 10, f"TOTAL A PAGAR: ${total_acumulado:,.2f}", ln=True, align='R')
             
-            # Ahorro en rojo
+            # Formato de ahorro en rojo (RGB 204, 0, 0)
             pdf.set_text_color(204, 0, 0)
             pdf.cell(190, 10, f"AHORRO TOTAL: ${ahorro_total:,.2f}", ln=True, align='R')
-            pdf.set_text_color(0, 0, 0)
+            pdf.set_text_color(0, 0, 0) 
             
             pdf.set_y(270)
             pdf.set_font("Arial", 'I', 8)
