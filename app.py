@@ -219,7 +219,7 @@ elif st.session_state.tab_actual == "PEDIDO":
         st.divider()
         st.markdown(f"### Total Final: ${total_acumulado:,.2f}")
         
-        def generate_pdf():
+       def generate_pdf():
             pdf = FPDF()
             pdf.set_auto_page_break(auto=False)
             pdf.add_page()
@@ -231,22 +231,41 @@ elif st.session_state.tab_actual == "PEDIDO":
             pdf.cell(0, 8, f"Cliente: {st.session_state.nombre_cliente}", ln=True)
             pdf.cell(0, 8, f"Nro. Cliente: {st.session_state.numero_cliente}", ln=True)
             pdf.cell(0, 8, f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True)
+            
+            # --- NUEVA INFORMACIÓN EN EL PDF ---
+            unidades_totales = st.session_state.get('n1', 0) + st.session_state.get('n2', 0) + st.session_state.get('n3', 0)
+            pdf.cell(0, 8, f"Unidades entregadas por el cliente: {unidades_totales}", ln=True)
+            
             pdf.ln(5)
             pdf.set_font("Arial", 'B', 10)
             pdf.cell(100, 10, "Producto", 1, 0, 'C')
             pdf.cell(30, 10, "P. Lista", 1, 0, 'C')
             pdf.cell(20, 10, "Dto", 1, 0, 'C')
             pdf.cell(40, 10, "Subtotal", 1, 1, 'C')
+            
             pdf.set_font("Arial", '', 9)
+            precio_lista_total = 0 # Variable interna para el cálculo del ahorro
             for it in st.session_state.carrito:
                 sb = it['precio'] * (1 - it['dto']/100)
+                precio_lista_total += it['precio']
                 pdf.cell(100, 10, it['prod'][:55], 1)
                 pdf.cell(30, 10, f"${it['precio']:,.2f}", 1, 0, 'R')
                 pdf.cell(20, 10, f"{it['dto']}%", 1, 0, 'C')
                 pdf.cell(40, 10, f"${sb:,.2f}", 1, 1, 'R')
+            
             pdf.ln(5)
+            
+            # --- CÁLCULO DE AHORRO ---
+            ahorro_calculado = precio_lista_total - total_acumulado
+            
             pdf.set_font("Arial", 'B', 12)
-            pdf.cell(190, 10, f"TOTAL: ${total_acumulado:,.2f}", ln=True, align='R')
+            pdf.cell(190, 10, f"TOTAL A PAGAR: ${total_acumulado:,.2f}", ln=True, align='R')
+            
+            # Texto de ahorro en rojo
+            pdf.set_text_color(204, 0, 0)
+            pdf.cell(190, 10, f"AHORRO TOTAL: ${ahorro_calculado:,.2f}", ln=True, align='R')
+            pdf.set_text_color(0, 0, 0) # Volver a negro
+            
             pdf.set_y(270)
             pdf.set_font("Arial", 'I', 8)
             pdf.cell(0, 10, "Documento no oficial - Solo para fines informativos", 0, 0, 'C')
