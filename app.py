@@ -219,7 +219,7 @@ elif st.session_state.tab_actual == "PEDIDO":
         st.divider()
         st.markdown(f"### Total Final: ${total_acumulado:,.2f}")
         
-       def generate_pdf():
+        def generate_pdf():
             pdf = FPDF()
             pdf.set_auto_page_break(auto=False)
             pdf.add_page()
@@ -238,35 +238,15 @@ elif st.session_state.tab_actual == "PEDIDO":
             pdf.cell(20, 10, "Dto", 1, 0, 'C')
             pdf.cell(40, 10, "Subtotal", 1, 1, 'C')
             pdf.set_font("Arial", '', 9)
-            
-            total_descuento_monto = 0  # Variable para calcular el ahorro total
-            
             for it in st.session_state.carrito:
                 sb = it['precio'] * (1 - it['dto']/100)
-                ahorro_item = it['precio'] - sb
-                total_descuento_monto += ahorro_item
-                
                 pdf.cell(100, 10, it['prod'][:55], 1)
                 pdf.cell(30, 10, f"${it['precio']:,.2f}", 1, 0, 'R')
                 pdf.cell(20, 10, f"{it['dto']}%", 1, 0, 'C')
                 pdf.cell(40, 10, f"${sb:,.2f}", 1, 1, 'R')
-            
             pdf.ln(5)
-            
-            # Línea de Total Descuentos en ROJO
             pdf.set_font("Arial", 'B', 12)
-            pdf.set_text_color(204, 0, 0)
-            pdf.cell(190, 10, f"TOTAL DESCUENTOS: ${total_descuento_monto:,.2f}", ln=True, align='R')
-            
-            # Línea de Total Final en NEGRO
-            pdf.set_text_color(0, 0, 0)
             pdf.cell(190, 10, f"TOTAL: ${total_acumulado:,.2f}", ln=True, align='R')
-            
-            # Aclaración de impuestos
-            pdf.ln(2)
-            pdf.set_font("Arial", 'B', 10)
-            pdf.cell(190, 10, "Precios no incluyen impuestos.", ln=True, align='R')
-            
             pdf.set_y(270)
             pdf.set_font("Arial", 'I', 8)
             pdf.cell(0, 10, "Documento no oficial - Solo para fines informativos", 0, 0, 'C')
