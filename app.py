@@ -219,7 +219,7 @@ elif st.session_state.tab_actual == "PEDIDO":
         st.divider()
         st.markdown(f"### Total Final: ${total_acumulado:,.2f}")
         
-def generate_pdf():
+        def generate_pdf():
             pdf = FPDF()
             pdf.set_auto_page_break(auto=False)
             pdf.add_page()
@@ -232,43 +232,21 @@ def generate_pdf():
             pdf.cell(0, 8, f"Nro. Cliente: {st.session_state.numero_cliente}", ln=True)
             pdf.cell(0, 8, f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True)
             pdf.ln(5)
-            
-            # Encabezados: Ajusté los anchos para que entre la nueva columna "Ahorro"
             pdf.set_font("Arial", 'B', 10)
-            pdf.cell(80, 10, "Producto", 1, 0, 'C')
+            pdf.cell(100, 10, "Producto", 1, 0, 'C')
             pdf.cell(30, 10, "P. Lista", 1, 0, 'C')
             pdf.cell(20, 10, "Dto", 1, 0, 'C')
-            pdf.cell(30, 10, "Ahorro $", 1, 0, 'C') # Nueva columna
-            pdf.cell(30, 10, "Subtotal", 1, 1, 'C')
-            
+            pdf.cell(40, 10, "Subtotal", 1, 1, 'C')
             pdf.set_font("Arial", '', 9)
-            total_ahorro_acumulado = 0
-            
             for it in st.session_state.carrito:
-                precio_lista = it['precio']
-                descuento_porcentaje = it['dto']
-                subtotal_item = precio_lista * (1 - descuento_porcentaje/100)
-                ahorro_item = precio_lista - subtotal_item
-                total_ahorro_acumulado += ahorro_item
-                
-                pdf.cell(80, 10, it['prod'][:45], 1)
-                pdf.cell(30, 10, f"${precio_lista:,.2f}", 1, 0, 'R')
-                pdf.cell(20, 10, f"{descuento_porcentaje}%", 1, 0, 'C')
-                pdf.cell(30, 10, f"${ahorro_item:,.2f}", 1, 0, 'R') # Valor del ahorro
-                pdf.cell(30, 10, f"${subtotal_item:,.2f}", 1, 1, 'R')
-            
+                sb = it['precio'] * (1 - it['dto']/100)
+                pdf.cell(100, 10, it['prod'][:55], 1)
+                pdf.cell(30, 10, f"${it['precio']:,.2f}", 1, 0, 'R')
+                pdf.cell(20, 10, f"{it['dto']}%", 1, 0, 'C')
+                pdf.cell(40, 10, f"${sb:,.2f}", 1, 1, 'R')
             pdf.ln(5)
-            
-            # --- TOTALES ---
             pdf.set_font("Arial", 'B', 12)
-            # Ahorro destacado en ROJO
-            pdf.set_text_color(204, 0, 0)
-            pdf.cell(190, 10, f"USTED AHORRA: ${total_ahorro_acumulado:,.2f}", ln=True, align='R')
-            
-            # Total final en NEGRO
-            pdf.set_text_color(0, 0, 0)
-            pdf.cell(190, 10, f"TOTAL FINAL: ${total_acumulado:,.2f}", ln=True, align='R')
-            
+            pdf.cell(190, 10, f"TOTAL: ${total_acumulado:,.2f}", ln=True, align='R')
             pdf.set_y(270)
             pdf.set_font("Arial", 'I', 8)
             pdf.cell(0, 10, "Documento no oficial - Solo para fines informativos", 0, 0, 'C')
