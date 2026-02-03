@@ -259,7 +259,7 @@ elif st.session_state.tab_actual == "PEDIDO":
             pdf.ln(5)
             
             # Cálculo y visualización de Ahorro
-           total_lista_original = sum(it['precio'] for it in st.session_state.carrito)
+            total_lista_original = sum(it['precio'] for it in st.session_state.carrito)
             ahorro_total = total_lista_original - total_acumulado
             
             pdf.set_font("Arial", 'B', 12)
