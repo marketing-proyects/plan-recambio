@@ -28,7 +28,6 @@ def load_prices():
     try:
         df = pd.read_excel(file_path, sheet_name="Hoja1")
         df.columns = [c.strip() for c in df.columns]
-        # Limpieza de espacios para evitar fallos de coincidencia
         df['Imagen'] = df['Imagen'].astype(str).str.strip()
         columnas_req = ["Producto", "Imagen", "Código", "Precio"]
         df = df.dropna(subset=columnas_req)
@@ -58,16 +57,11 @@ f_bold = get_base64("WuerthBold.ttf")
 st.markdown(f"""
     <style>
     @font-face {{ font-family: 'WuerthBold'; src: url('data:font/ttf;base64,{f_bold}'); }}
-    
-    /* OCULTAR ICONOS DE ENLACE / CLIP / ANCHORS */
     .element-container:has(h1) a, .element-container:has(h2) a, .element-container:has(h3) a, 
     .element-container:has(h4) a, .element-container:has(h5) a, .element-container:has(h6) a,
-    [data-testid="stHeaderActionElements"] {{
-        display: none !important;
-    }}
+    [data-testid="stHeaderActionElements"] {{ display: none !important; }}
     header {{ visibility: hidden; }}
     button[title="View fullscreen"] {{ visibility: hidden; }}
-    
     .stApp {{ background: none; }}
     .bg-layer {{
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -113,8 +107,6 @@ if st.session_state.tab_actual == "CALCULADORA":
         qb = st.number_input("Solo Batería o Cargador (5% c/u)", 0, 100, 0, key="n3")
         total_u = qc + qs + qb
         st.markdown(f'<div><b>Unidades Entregadas</b><div class="small-num">{total_u}</div></div>', unsafe_allow_html=True)
-        st.markdown(f'<div style="color: red;"><b>Puedes adquirir esta misma cantidad de herramientas con el descuento especial de este Plan Recambio</b></div>', unsafe_allow_html=True)
-        
     with cb:
         val_real = (qc * 20) + (qs * 10) + (qb * 5)
         val_vis = min(val_real, 20)
@@ -132,71 +124,44 @@ if st.session_state.tab_actual == "CALCULADORA":
             st.button("MÍNIMO 20% REQUERIDO", use_container_width=True, disabled=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- PESTAÑA 2: CATÁLOGO (ORDENADO POR PRECIO) ---
+# --- PESTAÑA 2: CATÁLOGO ---
 elif st.session_state.tab_actual == "CATÁLOGO":
     st.markdown('<div class="card"><div class="card-title">Seleccionar Máquina Nueva</div>', unsafe_allow_html=True)
     p = "assets/productos"
-    
     nombres_reales = {
         "ABSR 12 COMPACT_2.png": "Taladro Destornillador ABS Compacto",
         "ABSR 20 COMBI_1.png": "Taladro Atornillador ABSR 20 Combinado",
         "ABSR 20 COMBI_2.png": "Taladro Atornillador ABSR 20 Compact",
         "ABSR 20 PWR COMBI_1.png": "Taladro Percutor y Atornillador ABSR 20 PWR Combi",
         "AWSR 20 COMPACT_1.png": "Amoladora Angular AWSR 20 Compact",
-        "ASSR 20_3.png": "Atornillador de Impacto Master ASSR 20 14 inch Compact",                     
+        "ASSR 20_3.png": "Atornillador de Impacto Master ASSR 20 14 inch Compact",
         "ASSR 20 - 12 POWER_1.png": "LLave de Impacto ASSR 20 - 1/2 Compact 20V",
         "ASSR 20 - 34_1.png": "LLave de Impacto ASSR 20 - 3/4 20V",
         "ABHR 20 LIGHT_1.png": "Rotomartillo Light",
         "ABHR 20 POWER_1.png": "Rotomartillo Power"
     }
-
     if os.path.exists(p):
         archivos = [f for f in os.listdir(p) if f.lower().endswith('.png')]
         if archivos and not df_precios.empty:
-            def mostrar_nombre(archivo): return nombres_reales.get(archivo, archivo)
-            
-            # ORDENAMOS POR PRECIO
-            # 1. Filtramos los productos del excel que tienen una imagen mapeada en la app
             df_valido = df_precios[df_precios['Imagen'].isin(nombres_reales.values())].copy()
-            # 2. Ordenamos el DataFrame por precio
             df_ordenado = df_valido.sort_values(by='Precio', ascending=True)
-            
-            # 3. Creamos la lista de archivos basada en ese orden
             nombre_a_archivo = {v: k for k, v in nombres_reales.items()}
             archivos_finales = [nombre_a_archivo[n] for n in df_ordenado['Imagen'].tolist() if nombre_a_archivo[n] in archivos]
-            
             if archivos_finales:
-                sel = st.selectbox("Producto:", archivos_finales, format_func=mostrar_nombre)
-                nombre_visible = mostrar_nombre(sel).strip()
-                
+                sel = st.selectbox("Producto:", archivos_finales, format_func=lambda x: nombres_reales.get(x, x))
+                nombre_visible = nombres_reales.get(sel).strip()
                 datos_prod = df_precios[df_precios['Imagen'] == nombre_visible].iloc[0]
                 precio_lista = float(datos_prod['Precio'])
-                codigo_prod = str(datos_prod['Código'])
-                
                 ci, cs = st.columns(2)
                 with ci: st.image(os.path.join(p, sel), width=280)
                 with cs:
                     st.markdown(f"### Precio: ${precio_lista:,.2f}")
-                    st.write(f"**Código:** {codigo_prod}")
-                    
-                    num_en_carro = len(st.session_state.carrito)
-                    faltantes_30 = 3 - num_en_carro
-                    if num_en_carro >= 3:
-                        st.success("¡Beneficio 30% activado!")
-                        dto_item = 30
-                    else:
-                        dto_item = 20
-                        st.info(f"Faltan {max(0, faltantes_30)} unidad(es) para el 30%.")
-
+                    dto_item = 30 if len(st.session_state.carrito) >= 2 else 20
                     if st.button("AÑADIR AL PEDIDO", use_container_width=True):
                         st.session_state.carrito.append({"prod": nombre_visible, "precio": precio_lista, "dto": dto_item})
                         if len(st.session_state.carrito) >= 3:
                             for it in st.session_state.carrito: it['dto'] = 30
-                        st.toast(f"✅ {nombre_visible} añadido")
                         st.rerun()
-            else:
-                st.warning("No se encontraron coincidencias entre el Excel y las fotos.")
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # --- PESTAÑA 3: PEDIDO ---
 elif st.session_state.tab_actual == "PEDIDO":
@@ -219,54 +184,47 @@ elif st.session_state.tab_actual == "PEDIDO":
         st.divider()
         st.markdown(f"### Total Final: ${total_acumulado:,.2f}")
         
-       def generate_pdf():
+        def generate_pdf():
             pdf = FPDF()
             pdf.set_auto_page_break(auto=False)
             pdf.add_page()
             if os.path.exists("logo_wurth.jpg"): pdf.image("logo_wurth.jpg", x=160, y=10, w=35)
-            
             pdf.set_font("Arial", 'B', 16)
             pdf.cell(0, 10, "RESUMEN DE VENTA - PLAN RECAMBIO", ln=True, align='L')
             pdf.ln(10)
-            
             pdf.set_font("Arial", '', 12)
             pdf.cell(0, 8, f"Cliente: {st.session_state.nombre_cliente}", ln=True)
             pdf.cell(0, 8, f"Nro. Cliente: {st.session_state.numero_cliente}", ln=True)
             pdf.cell(0, 8, f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True)
             
-            # --- INFORMACIÓN DE UNIDADES ---
-            unidades_cliente = st.session_state.get('n1', 0) + st.session_state.get('n2', 0) + st.session_state.get('n3', 0)
-            pdf.cell(0, 8, f"Maquinas entregadas por el cliente: {unidades_cliente}", ln=True)
-            
+            # --- DATOS DEL PLAN RECAMBIO ---
+            u_entregadas = st.session_state.get('n1', 0) + st.session_state.get('n2', 0) + st.session_state.get('n3', 0)
+            pdf.cell(0, 8, f"Maquinas entregadas por el cliente: {u_entregadas}", ln=True)
             pdf.ln(5)
+            
             pdf.set_font("Arial", 'B', 10)
             pdf.cell(100, 10, "Producto", 1, 0, 'C')
             pdf.cell(30, 10, "P. Lista", 1, 0, 'C')
             pdf.cell(20, 10, "Dto", 1, 0, 'C')
             pdf.cell(40, 10, "Subtotal", 1, 1, 'C')
-            
             pdf.set_font("Arial", '', 9)
-            suma_precios_lista = 0 
+            
+            p_lista_total = 0
             for it in st.session_state.carrito:
                 sb = it['precio'] * (1 - it['dto']/100)
-                suma_precios_lista += it['precio']
+                p_lista_total += it['precio']
                 pdf.cell(100, 10, it['prod'][:55], 1)
                 pdf.cell(30, 10, f"${it['precio']:,.2f}", 1, 0, 'R')
                 pdf.cell(20, 10, f"{it['dto']}%", 1, 0, 'C')
                 pdf.cell(40, 10, f"${sb:,.2f}", 1, 1, 'R')
             
             pdf.ln(5)
-            
-            # --- CÁLCULO DE AHORRO ---
-            ahorro_total = suma_precios_lista - total_acumulado
-            
+            ahorro = p_lista_total - total_acumulado
             pdf.set_font("Arial", 'B', 12)
             pdf.cell(190, 10, f"TOTAL A PAGAR: ${total_acumulado:,.2f}", ln=True, align='R')
-            
-            # Formato de ahorro en rojo (RGB 204, 0, 0)
             pdf.set_text_color(204, 0, 0)
-            pdf.cell(190, 10, f"AHORRO TOTAL: ${ahorro_total:,.2f}", ln=True, align='R')
-            pdf.set_text_color(0, 0, 0) 
+            pdf.cell(190, 10, f"AHORRO TOTAL: ${ahorro:,.2f}", ln=True, align='R')
+            pdf.set_text_color(0, 0, 0)
             
             pdf.set_y(270)
             pdf.set_font("Arial", 'I', 8)
