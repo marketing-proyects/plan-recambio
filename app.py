@@ -234,10 +234,10 @@ elif st.session_state.tab_actual == "PEDIDO":
             pdf.cell(0, 8, f"Nro. Cliente: {st.session_state.numero_cliente}", ln=True)
             pdf.cell(0, 8, f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True)
             
-            # --- NUEVA INFORMACIÓN: UNIDADES ---
-            # Sumamos directamente los valores de las llaves n1, n2 y n3 de la calculadora
-            unidades_totales = st.session_state.get('n1', 0) + st.session_state.get('n2', 0) + st.session_state.get('n3', 0)
-            pdf.cell(0, 8, f"Maquinas entregadas por el cliente: {unidades_totales}", ln=True)
+            # --- AGREGADO: UNIDADES ENTREGADAS ---
+            # Sumamos los valores de las llaves n1, n2 y n3 definidas en tu pestaña CALCULADORA
+            cant_entregada = st.session_state.get('n1', 0) + st.session_state.get('n2', 0) + st.session_state.get('n3', 0)
+            pdf.cell(0, 8, f"Maquinas entregadas por el cliente: {cant_entregada}", ln=True)
             
             pdf.ln(5)
             pdf.set_font("Arial", 'B', 10)
@@ -247,10 +247,10 @@ elif st.session_state.tab_actual == "PEDIDO":
             pdf.cell(40, 10, "Subtotal", 1, 1, 'C')
             
             pdf.set_font("Arial", '', 9)
-            precio_lista_total = 0 # Iniciamos contador interno para el ahorro
+            precio_lista_total = 0 # Variable interna para calcular el ahorro
             for it in st.session_state.carrito:
                 sb = it['precio'] * (1 - it['dto']/100)
-                precio_lista_total += it['precio'] # Acumulamos el precio sin descuento
+                precio_lista_total += it['precio']
                 pdf.cell(100, 10, it['prod'][:55], 1)
                 pdf.cell(30, 10, f"${it['precio']:,.2f}", 1, 0, 'R')
                 pdf.cell(20, 10, f"{it['dto']}%", 1, 0, 'C')
@@ -258,16 +258,16 @@ elif st.session_state.tab_actual == "PEDIDO":
             
             pdf.ln(5)
             
-            # --- NUEVA INFORMACIÓN: AHORRO ---
+            # --- AGREGADO: CÁLCULO DE AHORRO ---
             ahorro_calculado = precio_lista_total - total_acumulado
             
             pdf.set_font("Arial", 'B', 12)
             pdf.cell(190, 10, f"TOTAL A PAGAR: ${total_acumulado:,.2f}", ln=True, align='R')
             
-            # Formato de ahorro en color rojo (RGB para rojo Würth)
+            # Mostrar el ahorro en color rojo
             pdf.set_text_color(204, 0, 0)
             pdf.cell(190, 10, f"AHORRO TOTAL: ${ahorro_calculado:,.2f}", ln=True, align='R')
-            pdf.set_text_color(0, 0, 0) # Restablecer a negro
+            pdf.set_text_color(0, 0, 0) # Volver a negro para el pie de página
             
             pdf.set_y(270)
             pdf.set_font("Arial", 'I', 8)
