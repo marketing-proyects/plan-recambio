@@ -224,17 +224,19 @@ elif st.session_state.tab_actual == "PEDIDO":
             pdf.set_auto_page_break(auto=False)
             pdf.add_page()
             if os.path.exists("logo_wurth.jpg"): pdf.image("logo_wurth.jpg", x=160, y=10, w=35)
+            
             pdf.set_font("Arial", 'B', 16)
             pdf.cell(0, 10, "RESUMEN DE VENTA - PLAN RECAMBIO", ln=True, align='L')
             pdf.ln(10)
+            
             pdf.set_font("Arial", '', 12)
             pdf.cell(0, 8, f"Cliente: {st.session_state.nombre_cliente}", ln=True)
             pdf.cell(0, 8, f"Nro. Cliente: {st.session_state.numero_cliente}", ln=True)
             pdf.cell(0, 8, f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True)
             
-            # --- DATOS EXTRAÍDOS SIN CAMBIAR LA PROGRAMACIÓN EXTERNA ---
-            u_totales = st.session_state.get('n1', 0) + st.session_state.get('n2', 0) + st.session_state.get('n3', 0)
-            pdf.cell(0, 8, f"Maquinas entregadas por el cliente: {u_totales}", ln=True)
+            # --- Información adicional en el PDF ---
+            cant_u = st.session_state.get('n1', 0) + st.session_state.get('n2', 0) + st.session_state.get('n3', 0)
+            pdf.cell(0, 8, f"Maquinas entregadas por el cliente: {cant_u}", ln=True)
             
             pdf.ln(5)
             pdf.set_font("Arial", 'B', 10)
@@ -244,25 +246,25 @@ elif st.session_state.tab_actual == "PEDIDO":
             pdf.cell(40, 10, "Subtotal", 1, 1, 'C')
             
             pdf.set_font("Arial", '', 9)
-            suma_precios_lista = 0 
+            suma_lista = 0
             for it in st.session_state.carrito:
                 sb = it['precio'] * (1 - it['dto']/100)
-                suma_precios_lista += it['precio']
+                suma_lista += it['precio']
                 pdf.cell(100, 10, it['prod'][:55], 1)
                 pdf.cell(30, 10, f"${it['precio']:,.2f}", 1, 0, 'R')
                 pdf.cell(20, 10, f"{it['dto']}%", 1, 0, 'C')
                 pdf.cell(40, 10, f"${sb:,.2f}", 1, 1, 'R')
             
             pdf.ln(5)
-            ahorro_final = suma_precios_lista - total_acumulado
+            ahorro_total = suma_lista - total_acumulado
             
             pdf.set_font("Arial", 'B', 12)
             pdf.cell(190, 10, f"TOTAL A PAGAR: ${total_acumulado:,.2f}", ln=True, align='R')
             
-            # Formato de ahorro en rojo como se ve en tu imagen de referencia
+            # Ahorro en rojo
             pdf.set_text_color(204, 0, 0)
-            pdf.cell(190, 10, f"AHORRO TOTAL: ${ahorro_final:,.2f}", ln=True, align='R')
-            pdf.set_text_color(0, 0, 0) 
+            pdf.cell(190, 10, f"AHORRO TOTAL: ${ahorro_total:,.2f}", ln=True, align='R')
+            pdf.set_text_color(0, 0, 0)
             
             pdf.set_y(270)
             pdf.set_font("Arial", 'I', 8)
