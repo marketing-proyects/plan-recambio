@@ -157,8 +157,17 @@ elif st.session_state.tab_actual == "CATÁLOGO":
                 with ci: st.image(os.path.join(p, sel), width=280)
                 with cs:
                     st.markdown(f"### Precio: ${precio_lista:,.2f}")
-                    num_items = len(st.session_state.carrito)
-                    dto_item = 30 if num_items >= 2 else 20
+                    
+                    # RESTAURACIÓN DEL CARTEL INFORMATIVO
+                    num_en_carro = len(st.session_state.carrito)
+                    faltantes_30 = 3 - num_en_carro
+                    if num_en_carro >= 3:
+                        st.success("¡Beneficio 30% activado!")
+                        dto_item = 30
+                    else:
+                        dto_item = 20
+                        st.info(f"Faltan {max(0, faltantes_30)} unidad(es) para activar el descuento del 30%")
+
                     if st.button("AÑADIR AL PEDIDO", use_container_width=True):
                         st.session_state.carrito.append({"prod": nombre_visible, "precio": precio_lista, "dto": dto_item})
                         if len(st.session_state.carrito) >= 3:
@@ -202,7 +211,7 @@ elif st.session_state.tab_actual == "PEDIDO":
             pdf.cell(0, 8, f"Nro. Cliente: {st.session_state.numero_cliente}", ln=True)
             pdf.cell(0, 8, f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True)
             
-            # Unidades entregadas (Lectura directa de inputs)
+            # Datos del Plan Recambio en el PDF
             u_entregadas = st.session_state.get('n1', 0) + st.session_state.get('n2', 0) + st.session_state.get('n3', 0)
             pdf.cell(0, 8, f"Maquinas entregadas por el cliente: {u_entregadas}", ln=True)
             
@@ -228,7 +237,6 @@ elif st.session_state.tab_actual == "PEDIDO":
             pdf.set_font("Arial", 'B', 12)
             pdf.cell(190, 10, f"TOTAL A PAGAR: ${total_acumulado:,.2f}", ln=True, align='R')
             
-            # Ahorro en rojo
             pdf.set_text_color(204, 0, 0)
             pdf.cell(190, 10, f"AHORRO TOTAL: ${ahorro_calc:,.2f}", ln=True, align='R')
             pdf.set_text_color(0, 0, 0)
