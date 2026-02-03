@@ -236,7 +236,7 @@ elif st.session_state.tab_actual == "PEDIDO":
             pdf.cell(100, 10, "Producto", 1, 0, 'C')
             pdf.cell(30, 10, "P. Lista", 1, 0, 'C')
             pdf.cell(20, 10, "Dto", 1, 0, 'C')
-            pdf.cell(40, 10, "Subtotal", 1, 1, 'C')
+            pdf.cell(40, 10, "Subtotal (no incluye impuestos)", 1, 1, 'C')
             pdf.set_font("Arial", '', 9)
             for it in st.session_state.carrito:
                 sb = it['precio'] * (1 - it['dto']/100)
