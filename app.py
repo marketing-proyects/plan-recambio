@@ -219,7 +219,7 @@ elif st.session_state.tab_actual == "PEDIDO":
         st.divider()
         st.markdown(f"### Total Final: ${total_acumulado:,.2f}")
         
-        def generate_pdf():
+       def generate_pdf():
             pdf = FPDF()
             pdf.set_auto_page_break(auto=False)
             pdf.add_page()
@@ -238,15 +238,33 @@ elif st.session_state.tab_actual == "PEDIDO":
             pdf.cell(20, 10, "Dto", 1, 0, 'C')
             pdf.cell(40, 10, "Subtotal", 1, 1, 'C')
             pdf.set_font("Arial", '', 9)
+            
+            # --- CÁLCULO INTERNO SOLO PARA EL PDF ---
+            precio_lista_total = 0
             for it in st.session_state.carrito:
                 sb = it['precio'] * (1 - it['dto']/100)
+                precio_lista_total += it['precio']
                 pdf.cell(100, 10, it['prod'][:55], 1)
                 pdf.cell(30, 10, f"${it['precio']:,.2f}", 1, 0, 'R')
                 pdf.cell(20, 10, f"{it['dto']}%", 1, 0, 'C')
                 pdf.cell(40, 10, f"${sb:,.2f}", 1, 1, 'R')
-            pdf.ln(5)
+            
+            pdf.ln(10)
+            ahorro_final = precio_lista_total - total_acumulado
+            
+            # Totales del PDF
             pdf.set_font("Arial", 'B', 12)
             pdf.cell(190, 10, f"TOTAL: ${total_acumulado:,.2f}", ln=True, align='R')
+            
+            # RECUADRO ROJO DE AHORRO (Solo visible en el archivo generado)
+            pdf.ln(2)
+            pdf.set_text_color(204, 0, 0) # Rojo Würth
+            pdf.set_draw_color(204, 0, 0)
+            pdf.set_line_width(0.6)
+            pdf.cell(120, 10, "", 0, 0) # Espacio para alinear a la derecha
+            pdf.cell(70, 12, f"AHORRO TOTAL: ${ahorro_final:,.2f}", 1, 1, 'C')
+            
+            pdf.set_text_color(0, 0, 0) # Reset color
             pdf.set_y(270)
             pdf.set_font("Arial", 'I', 8)
             pdf.cell(0, 10, "Documento no oficial - Solo para fines informativos", 0, 0, 'C')
