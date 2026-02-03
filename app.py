@@ -113,7 +113,7 @@ if st.session_state.tab_actual == "CALCULADORA":
         qb = st.number_input("Solo Batería o Cargador (5% c/u)", 0, 100, 0, key="n3")
         total_u = qc + qs + qb
         st.markdown(f'<div><b>Unidades Entregadas</b><div class="small-num">{total_u}</div></div>', unsafe_allow_html=True)
-        st.markdown(f'<div><b>Puedes adquirir esta misma cantidad de herramientas con el descuento</b><div class="small-num"></div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div><b>Puedes adquirir esta misma cantidad de herramientas con el descuento especial de este Plan Recambio</b><div class="small-num"></div></div>', unsafe_allow_html=True)
     with cb:
         val_real = (qc * 20) + (qs * 10) + (qb * 5)
         val_vis = min(val_real, 20)
