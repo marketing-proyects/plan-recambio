@@ -226,29 +226,48 @@ elif st.session_state.tab_actual == "PEDIDO":
             pdf.set_auto_page_break(auto=False)
             pdf.add_page()
             if os.path.exists("logo_wurth.jpg"): pdf.image("logo_wurth.jpg", x=160, y=10, w=35)
+            
             pdf.set_font("Arial", 'B', 16)
             pdf.cell(0, 10, "RESUMEN DE VENTA - PLAN RECAMBIO", ln=True, align='L')
             pdf.ln(10)
+            
             pdf.set_font("Arial", '', 12)
             pdf.cell(0, 8, f"Cliente: {st.session_state.nombre_cliente}", ln=True)
             pdf.cell(0, 8, f"Nro. Cliente: {st.session_state.numero_cliente}", ln=True)
             pdf.cell(0, 8, f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True)
+            
+            # NUEVO: Dato de unidades entregadas
+            cant_entregada = st.session_state.get('n1', 0) + st.session_state.get('n2', 0) + st.session_state.get('n3', 0)
+            pdf.cell(0, 8, f"Maquinas entregadas por el cliente: {cant_entregada}", ln=True)
+            
             pdf.ln(5)
             pdf.set_font("Arial", 'B', 10)
             pdf.cell(100, 10, "Producto", 1, 0, 'C')
             pdf.cell(30, 10, "P. Lista", 1, 0, 'C')
             pdf.cell(20, 10, "Dto", 1, 0, 'C')
             pdf.cell(40, 10, "Subtotal", 1, 1, 'C')
+            
             pdf.set_font("Arial", '', 9)
+            total_lista_original = 0 # Para calcular el ahorro posterior
             for it in st.session_state.carrito:
                 sb = it['precio'] * (1 - it['dto']/100)
+                total_lista_original += it['precio']
                 pdf.cell(100, 10, it['prod'][:55], 1)
                 pdf.cell(30, 10, f"${it['precio']:,.2f}", 1, 0, 'R')
                 pdf.cell(20, 10, f"{it['dto']}%", 1, 0, 'C')
                 pdf.cell(40, 10, f"${sb:,.2f}", 1, 1, 'R')
+            
             pdf.ln(5)
+            
+            # NUEVO: Cálculo y visualización de Ahorro
+            ahorro_total = total_lista_original - total_acumulado
             pdf.set_font("Arial", 'B', 12)
-            pdf.cell(190, 10, f"TOTAL: ${total_acumulado:,.2f}", ln=True, align='R')
+            pdf.cell(190, 8, f"TOTAL A PAGAR: ${total_acumulado:,.2f}", ln=True, align='R')
+            
+            pdf.set_text_color(204, 0, 0) # Color rojo para el ahorro
+            pdf.cell(190, 8, f"AHORRO TOTAL: ${ahorro_total:,.2f}", ln=True, align='R')
+            pdf.set_text_color(0, 0, 0) # Volver a negro
+            
             pdf.set_y(270)
             pdf.set_font("Arial", 'I', 8)
             pdf.cell(0, 10, "Documento no oficial - Solo para fines informativos", 0, 0, 'C')
@@ -256,6 +275,3 @@ elif st.session_state.tab_actual == "PEDIDO":
 
         pdf_bytes = generate_pdf()
         st.download_button(label="📥 DESCARGAR PDF", data=pdf_bytes, file_name=f"Venta_{st.session_state.nombre_cliente}.pdf", mime="application/pdf", use_container_width=True)
-    else:
-        st.info("El pedido está vacío.")
-    st.markdown('</div>', unsafe_allow_html=True)
