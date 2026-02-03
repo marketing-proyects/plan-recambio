@@ -236,8 +236,8 @@ elif st.session_state.tab_actual == "PEDIDO":
             pdf.cell(0, 8, f"Nro. Cliente: {st.session_state.numero_cliente}", ln=True)
             pdf.cell(0, 8, f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True)
             
-            # NUEVO: Dato de unidades entregadas
-            cant_entregada = st.session_state.get('n1', 0) + st.session_state.get('n2', 0) + st.session_state.get('n3', 0)
+            # CANTIDAD ENTREGADA VISUALIZACION PDF:
+            cant_entregada = st.session_state.get('total_unidades_pdf', 0)
             pdf.cell(0, 8, f"Maquinas entregadas por el cliente: {cant_entregada}", ln=True)
             
             pdf.ln(5)
