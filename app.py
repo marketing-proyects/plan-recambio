@@ -107,6 +107,7 @@ if st.session_state.tab_actual == "CALCULADORA":
         qb = st.number_input("Solo Batería o Cargador (5% c/u)", 0, 100, 0, key="n3")
         total_u = qc + qs + qb
         st.markdown(f'<div><b>Unidades Entregadas</b><div class="small-num">{total_u}</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="color: red;"><b>Puedes adquirir esta misma cantidad de herramientas con el descuento especial de este Plan Recambio</b></div>', unsafe_allow_html=True)
     with cb:
         val_real = (qc * 20) + (qs * 10) + (qb * 5)
         val_vis = min(val_real, 20)
@@ -156,7 +157,8 @@ elif st.session_state.tab_actual == "CATÁLOGO":
                 with ci: st.image(os.path.join(p, sel), width=280)
                 with cs:
                     st.markdown(f"### Precio: ${precio_lista:,.2f}")
-                    dto_item = 30 if len(st.session_state.carrito) >= 2 else 20
+                    num_items = len(st.session_state.carrito)
+                    dto_item = 30 if num_items >= 2 else 20
                     if st.button("AÑADIR AL PEDIDO", use_container_width=True):
                         st.session_state.carrito.append({"prod": nombre_visible, "precio": precio_lista, "dto": dto_item})
                         if len(st.session_state.carrito) >= 3:
@@ -188,42 +190,47 @@ elif st.session_state.tab_actual == "PEDIDO":
             pdf = FPDF()
             pdf.set_auto_page_break(auto=False)
             pdf.add_page()
-            if os.path.exists("logo_wurth.jpg"): pdf.image("logo_wurth.jpg", x=160, y=10, w=35)
+            if os.path.exists("logo_wurth.jpg"):
+                pdf.image("logo_wurth.jpg", x=160, y=10, w=35)
+            
             pdf.set_font("Arial", 'B', 16)
             pdf.cell(0, 10, "RESUMEN DE VENTA - PLAN RECAMBIO", ln=True, align='L')
             pdf.ln(10)
+            
             pdf.set_font("Arial", '', 12)
             pdf.cell(0, 8, f"Cliente: {st.session_state.nombre_cliente}", ln=True)
             pdf.cell(0, 8, f"Nro. Cliente: {st.session_state.numero_cliente}", ln=True)
             pdf.cell(0, 8, f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True)
             
-            # --- DATOS DEL PLAN RECAMBIO ---
+            # Unidades entregadas (Lectura directa de inputs)
             u_entregadas = st.session_state.get('n1', 0) + st.session_state.get('n2', 0) + st.session_state.get('n3', 0)
             pdf.cell(0, 8, f"Maquinas entregadas por el cliente: {u_entregadas}", ln=True)
-            pdf.ln(5)
             
+            pdf.ln(5)
             pdf.set_font("Arial", 'B', 10)
             pdf.cell(100, 10, "Producto", 1, 0, 'C')
             pdf.cell(30, 10, "P. Lista", 1, 0, 'C')
             pdf.cell(20, 10, "Dto", 1, 0, 'C')
             pdf.cell(40, 10, "Subtotal", 1, 1, 'C')
-            pdf.set_font("Arial", '', 9)
             
-            p_lista_total = 0
+            pdf.set_font("Arial", '', 9)
+            suma_p_lista = 0
             for it in st.session_state.carrito:
                 sb = it['precio'] * (1 - it['dto']/100)
-                p_lista_total += it['precio']
+                suma_p_lista += it['precio']
                 pdf.cell(100, 10, it['prod'][:55], 1)
                 pdf.cell(30, 10, f"${it['precio']:,.2f}", 1, 0, 'R')
                 pdf.cell(20, 10, f"{it['dto']}%", 1, 0, 'C')
                 pdf.cell(40, 10, f"${sb:,.2f}", 1, 1, 'R')
             
             pdf.ln(5)
-            ahorro = p_lista_total - total_acumulado
+            ahorro_calc = suma_p_lista - total_acumulado
             pdf.set_font("Arial", 'B', 12)
             pdf.cell(190, 10, f"TOTAL A PAGAR: ${total_acumulado:,.2f}", ln=True, align='R')
+            
+            # Ahorro en rojo
             pdf.set_text_color(204, 0, 0)
-            pdf.cell(190, 10, f"AHORRO TOTAL: ${ahorro:,.2f}", ln=True, align='R')
+            pdf.cell(190, 10, f"AHORRO TOTAL: ${ahorro_calc:,.2f}", ln=True, align='R')
             pdf.set_text_color(0, 0, 0)
             
             pdf.set_y(270)
