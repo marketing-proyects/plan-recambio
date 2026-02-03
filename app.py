@@ -108,15 +108,15 @@ if st.session_state.tab_actual == "CALCULADORA":
     st.markdown('<div class="card"><div class="card-title">Ingresar entregas del cliente</div>', unsafe_allow_html=True)
     ca, cb = st.columns([1.2, 0.8])
     with ca:
-        qc = st.number_input("Máquinas Completas (20% c/u)", 0, 100, 0, key="n1")
-        qs = st.number_input("Máquinas sin batería (10% c/u)", 0, 100, 0, key="n2")
-        qb = st.number_input("Solo Batería o Cargador (5% c/u)", 0, 100, 0, key="n3")
-        total_u = qc + qs + qb
-        st.markdown(f'<div><b>Unidades Entregadas</b><div class="small-num">{total_u}</div></div>', unsafe_allow_html=True)
-        st.markdown(
-    f'<div style="color: red;"><b>FELICITACIONES: ¡Puedes adquirir esta misma cantidad de herramientas con dto. del PLAN RECAMBIO!</b></div>', 
-    unsafe_allow_html=True
-)
+        qc = st.number_input("Máquinas Completas (20% c/u)", 0, 100, value=st.session_state.get('n1', 0), key="n1")
+        qs = st.number_input("Máquinas sin batería (10% c/u)", 0, 100, value=st.session_state.get('n2', 0), key="n2")
+        qb = st.number_input("Solo Batería o Cargador (5% c/u)", 0, 100, value=st.session_state.get('n3', 0), key="n3")
+        
+        # ACTUALIZACIÓN: Guardamos el total en session_state para que el PDF lo vea siempre
+        st.session_state.total_unidades_pdf = qc + qs + qb
+        
+        st.markdown(f'<div><b>Unidades Entregadas</b><div class="small-num">{st.session_state.total_unidades_pdf}</div></div>', unsafe_allow_html=True)
+        
     with cb:
         val_real = (qc * 20) + (qs * 10) + (qb * 5)
         val_vis = min(val_real, 20)
