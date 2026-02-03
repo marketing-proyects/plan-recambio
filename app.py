@@ -114,7 +114,7 @@ if st.session_state.tab_actual == "CALCULADORA":
         total_u = qc + qs + qb
         st.markdown(f'<div><b>Unidades Entregadas</b><div class="small-num">{total_u}</div></div>', unsafe_allow_html=True)
         st.markdown(
-    f'<div style="color: red;"><b>Puedes adquirir esta misma cantidad de herramientas con el descuento especial de este Plan Recambio</b></div>', 
+    f'<div style="color: red;"><b>FELICITACIONES: ¡Puedes adquirir esta misma cantidad de herramientas con dto. del PLAN RECAMBIO!</b></div>', 
     unsafe_allow_html=True
 )
     with cb:
