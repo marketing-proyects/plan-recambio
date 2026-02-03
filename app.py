@@ -108,29 +108,26 @@ if st.session_state.tab_actual == "CALCULADORA":
     st.markdown('<div class="card"><div class="card-title">Ingresar entregas del cliente</div>', unsafe_allow_html=True)
     ca, cb = st.columns([1.2, 0.8])
     with ca:
-        # Mantenemos tus inputs originales
-        qc = st.number_input("Máquinas Completas (20% c/u)", 0, 100, value=st.session_state.get('n1', 0), key="n1")
-        qs = st.number_input("Máquinas sin batería (10% c/u)", 0, 100, value=st.session_state.get('n2', 0), key="n2")
-        qb = st.number_input("Solo Batería o Cargador (5% c/u)", 0, 100, value=st.session_state.get('n3', 0), key="n3")
-        
+        qc = st.number_input("Máquinas Completas (20% c/u)", 0, 100, 0, key="n1")
+        qs = st.number_input("Máquinas sin batería (10% c/u)", 0, 100, 0, key="n2")
+        qb = st.number_input("Solo Batería o Cargador (5% c/u)", 0, 100, 0, key="n3")
         total_u = qc + qs + qb
-        # Línea ESENCIAL para el PDF (no afecta visualmente)
-        st.session_state.total_unidades_pdf = total_u 
-
         st.markdown(f'<div><b>Unidades Entregadas</b><div class="small-num">{total_u}</div></div>', unsafe_allow_html=True)
-
     with cb:
-        # RESTAURACIÓN DEL CARTEL VERDE ORIGINAL
-        if total_u >= 3:
-            st.markdown(f'''
-                <div style="background-color: #d4edda; color: #155724; padding: 15px; border-radius: 10px; border: 1px solid #c3e6cb; text-align: center;">
-                    <h3 style="margin: 0;">¡BENEFICIO ACTIVADO!</h3>
-                    <p style="margin: 5px 0 0 0; font-size: 1.1em;">Has alcanzado el <b>30% de descuento</b> especial</p>
-                </div>
-            ''', unsafe_allow_html=True)
+        val_real = (qc * 20) + (qs * 10) + (qb * 5)
+        val_vis = min(val_real, 20)
+        st.markdown(f'<div><b>SUMATORIA DESCUENTOS</b><div class="big-num">{val_vis}%</div></div>', unsafe_allow_html=True)
+        if st.session_state.dto_base >= 20:
+             st.success("¡Beneficio activado!")
+        elif val_real >= 20:
+            st.markdown('<div class="btn-active">', unsafe_allow_html=True)
+            if st.button("ACTIVAR RECAMBIO", use_container_width=True):
+                st.session_state.dto_base = 20
+                st.session_state.tab_actual = "CATÁLOGO"
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
         else:
-            faltan = 3 - total_u
-            st.warning(f"Faltan {faltan} unidades para activar el descuento del 30%")
+            st.button("MÍNIMO 20% REQUERIDO", use_container_width=True, disabled=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --- PESTAÑA 2: CATÁLOGO (ORDENADO POR PRECIO) ---
@@ -225,51 +222,29 @@ elif st.session_state.tab_actual == "PEDIDO":
             pdf.set_auto_page_break(auto=False)
             pdf.add_page()
             if os.path.exists("logo_wurth.jpg"): pdf.image("logo_wurth.jpg", x=160, y=10, w=35)
-            
             pdf.set_font("Arial", 'B', 16)
             pdf.cell(0, 10, "RESUMEN DE VENTA - PLAN RECAMBIO", ln=True, align='L')
             pdf.ln(10)
-            
             pdf.set_font("Arial", '', 12)
             pdf.cell(0, 8, f"Cliente: {st.session_state.nombre_cliente}", ln=True)
             pdf.cell(0, 8, f"Nro. Cliente: {st.session_state.numero_cliente}", ln=True)
             pdf.cell(0, 8, f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True)
-            
-            # CANTIDAD ENTREGADA VISUALIZACION PDF:
-            cant_entregada = st.session_state.get('total_unidades_pdf', 0)
-            pdf.cell(0, 8, f"Maquinas entregadas por el cliente: {cant_entregada}", ln=True)
-            
             pdf.ln(5)
             pdf.set_font("Arial", 'B', 10)
             pdf.cell(100, 10, "Producto", 1, 0, 'C')
             pdf.cell(30, 10, "P. Lista", 1, 0, 'C')
             pdf.cell(20, 10, "Dto", 1, 0, 'C')
             pdf.cell(40, 10, "Subtotal", 1, 1, 'C')
-            
             pdf.set_font("Arial", '', 9)
-            total_lista_original = 0 # Para calcular el ahorro posterior
             for it in st.session_state.carrito:
                 sb = it['precio'] * (1 - it['dto']/100)
-                total_lista_original += it['precio']
                 pdf.cell(100, 10, it['prod'][:55], 1)
                 pdf.cell(30, 10, f"${it['precio']:,.2f}", 1, 0, 'R')
                 pdf.cell(20, 10, f"{it['dto']}%", 1, 0, 'C')
                 pdf.cell(40, 10, f"${sb:,.2f}", 1, 1, 'R')
-            
             pdf.ln(5)
-            
-            # Cálculo y visualización de Ahorro
-            total_lista_original = sum(it['precio'] for it in st.session_state.carrito)
-            ahorro_total = total_lista_original - total_acumulado
-            
             pdf.set_font("Arial", 'B', 12)
-            pdf.cell(190, 8, f"TOTAL A PAGAR: ${total_acumulado:,.2f}", ln=True, align='R')
-            
-            # Texto del ahorro en rojo como pediste
-            pdf.set_text_color(204, 0, 0)
-            pdf.cell(190, 8, f"AHORRO TOTAL: ${ahorro_total:,.2f}", ln=True, align='R')
-            pdf.set_text_color(0, 0, 0)
-            
+            pdf.cell(190, 10, f"TOTAL: ${total_acumulado:,.2f}", ln=True, align='R')
             pdf.set_y(270)
             pdf.set_font("Arial", 'I', 8)
             pdf.cell(0, 10, "Documento no oficial - Solo para fines informativos", 0, 0, 'C')
@@ -277,3 +252,6 @@ elif st.session_state.tab_actual == "PEDIDO":
 
         pdf_bytes = generate_pdf()
         st.download_button(label="📥 DESCARGAR PDF", data=pdf_bytes, file_name=f"Venta_{st.session_state.nombre_cliente}.pdf", mime="application/pdf", use_container_width=True)
+    else:
+        st.info("El pedido está vacío.")
+    st.markdown('</div>', unsafe_allow_html=True)
